@@ -29,7 +29,6 @@ cache = None
 tokenizer = None
 generator = None
 sequenceLength = None
-isReachLimitContext = False
 
 class ModelLoadRequest(BaseModel):
     path: str
@@ -166,19 +165,10 @@ async def get_model_info():
         max_seq_len=getattr(config, 'max_seq_len', None) if config else None
     )
 
-def generateText(newPrompt,settings,request):
-    # Generate text
-    return generator.generate_simple(
-        newPrompt,
-        settings,
-        request.max_new_tokens,
-        seed=None
-    )
-
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):
     """Generate text using the loaded model"""
-    global generator, isReachLimitContext
+    global generator
     
     if generator is None:
         return ResponseData[GenerateResponse](
@@ -196,38 +186,24 @@ async def generate_text(request: GenerateRequest):
         chat['chat'].append(f"{request.name}: {request.prompt}")
         chatText = "\n".join(chat['chat'])
 
-        # check if the context is larger sequence length
-        totalPrompWords = len(character["context"]) + len(chatText)
-        print(totalPrompWords)
-        if len(character["context"]) > sequenceLength:
-            return ResponseData[GenerateResponse](
-                status="error",
-                message = "context is larger than sequence length, please increase the sequence length or decrease the context"
-            )
-            
-        while totalPrompWords > sequenceLength:
-            if len(chat['chat']) > 0:
-                chat['chat'].pop(0)
-                chatText = "\n".join(chat['chat'])
-                totalPrompWords = len(character["context"]) + len(chatText)
-            else:
-                break
-
         newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
 
         print(newPrompt)
+        # Generate text
+        output = generator.generate_simple(
+            newPrompt,
+            settings,
+            request.max_new_tokens,
+            seed=None
+        )
 
-        output = generateText(newPrompt,settings,request)
         newOutput = output[len(newPrompt):].strip()
 
-        # check if output is empty so that the prompt token is decreased by removing past chat
         if newOutput == "":
-            for i in range(0,2):
-                if len(chat['chat']) > 0:
-                    chat['chat'].pop(0)
-                output = generateText(newPrompt,settings,request)
-                newOutput = output[len(newPrompt):].strip()
-                isReachLimitContext = True
+            return ResponseData[GenerateResponse](
+                status="error",
+                message = "context is larger than sequence length, please increase the sequence length or decrease the context or decrease the chat prompt"
+            )
 
         chat['chat'].append(f"{character['name']}: {newOutput}")
 
