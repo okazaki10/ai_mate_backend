@@ -45,12 +45,15 @@ class GenerateRequest(BaseModel):
     token_repetition_penalty: Optional[float] = 1.1
     stop_strings: Optional[list] = None
 
+class DeleteRequest(BaseModel):
+    index: int = 0
+
 class GenerateResponse(BaseModel):
     generated_text: str = ""
     prompt: str = ""
     full_response: str = ""
-    prompt_words: int = 0
-    output_words: int = 0
+    prompt_token: int = 0
+    output_token: int = 0
 
 T = TypeVar("T")
 
@@ -110,7 +113,7 @@ def load_model():
         config.model_dir = modelPath
         config.prepare()
         
-        sequenceLength = 4096
+        sequenceLength = 3100
         # Set sequence length
         config.max_seq_len = sequenceLength
         
@@ -135,36 +138,35 @@ def load_model():
 
 load_model()
 
-@app.get("/")
-async def root():
-    """Root endpoint with API information"""
-    return {
-        "message": "ExLlamaV2 FastAPI Server",
-        "endpoints": {
-            "/model/load": "POST - Load a model",
-            "/model/info": "GET - Get model information",
-            "/generate": "POST - Generate text",
-            "/health": "GET - Health check"
-        }
-    }
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "loaded": model is not None
-    }
+@app.post("/delete-chat", response_model=ResponseData[GenerateResponse])
+async def deleteChat(request: DeleteRequest):
+    """Generate text using the loaded model"""
+    global generator
+    
+    if generator is None:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = "No model loaded. Please load a model first using /model/load"
+        )
+    
+    try:
+        chat = loadChat()
 
-@app.get("/model/info", response_model=ModelInfo)
-async def get_model_info():
-    """Get information about the currently loaded model"""
-    return ModelInfo(
-        model_loaded=model is not None,
-        path=getattr(config, 'model_dir', None) if config else None,
-        max_seq_len=getattr(config, 'max_seq_len', None) if config else None
-    )
+        chat['chat'].pop(request.index)
 
+        saveChat(chat)
+
+        return ResponseData[GenerateResponse](
+            status="success",
+            message = ""
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Delete failed: {str(e)}"
+        )
+    
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):
     """Generate text using the loaded model"""
@@ -185,10 +187,22 @@ async def generate_text(request: GenerateRequest):
 
         chat['chat'].append(f"{request.name}: {request.prompt}")
         chatText = "\n".join(chat['chat'])
-
         newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
-
         print(newPrompt)
+
+        promptTokens = tokenizer.encode(newPrompt).shape[-1]
+        print(promptTokens)
+
+        # check if the prompt token is larger than sequence length         
+        while promptTokens + request.max_new_tokens > sequenceLength:
+            if len(chat['chat']) > 0:
+                chat['chat'].pop(0)
+                chatText = "\n".join(chat['chat'])
+                newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
+                promptTokens = tokenizer.encode(newPrompt).shape[-1]
+            else:
+                break
+
         # Generate text
         output = generator.generate_simple(
             newPrompt,
@@ -204,6 +218,8 @@ async def generate_text(request: GenerateRequest):
                 status="error",
                 message = "context is larger than sequence length, please increase the sequence length or decrease the context or decrease the chat prompt"
             )
+        
+        outputToken = tokenizer.encode(newOutput).shape[-1]
 
         chat['chat'].append(f"{character['name']}: {newOutput}")
 
@@ -211,8 +227,8 @@ async def generate_text(request: GenerateRequest):
         
         generateResponse = GenerateResponse(
             generated_text=newOutput,
-            prompt_words=len(newPrompt.split(" ")),
-            output_words=len(output.split(" ")) - len(newPrompt.split(" "))
+            prompt_token=promptTokens,
+            output_token=outputToken
         )
 
         return ResponseData[GenerateResponse](
