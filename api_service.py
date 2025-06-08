@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from pathlib import Path
+from typing import Generic, TypeVar
 import uvicorn
 import os
 import yaml
@@ -27,6 +28,8 @@ config = None
 cache = None
 tokenizer = None
 generator = None
+sequenceLength = None
+isReachLimitContext = False
 
 class ModelLoadRequest(BaseModel):
     path: str
@@ -47,7 +50,15 @@ class GenerateResponse(BaseModel):
     generated_text: str = ""
     prompt: str = ""
     full_response: str = ""
-    words: int = 0
+    prompt_words: int = 0
+    output_words: int = 0
+
+T = TypeVar("T")
+
+class ResponseData(BaseModel, Generic[T]):
+    status: str = ""
+    data: Optional[T] = None
+    message: str = ""
 
 class ModelInfo(BaseModel):
     loaded: bool
@@ -84,7 +95,7 @@ def findFirstDir(dir):
 
 def load_model():
     """Load an ExLlamaV2 model"""
-    global model, config, cache, tokenizer, generator
+    global model, config, cache, tokenizer, generator, sequenceLength
     
     try:
         # Check if model path exists
@@ -100,7 +111,7 @@ def load_model():
         config.model_dir = modelPath
         config.prepare()
         
-        sequenceLength = 8000
+        sequenceLength = 4096
         # Set sequence length
         config.max_seq_len = sequenceLength
         
@@ -155,13 +166,25 @@ async def get_model_info():
         max_seq_len=getattr(config, 'max_seq_len', None) if config else None
     )
 
-@app.post("/generate", response_model=GenerateResponse)
+def generateText(newPrompt,settings,request):
+    # Generate text
+    return generator.generate_simple(
+        newPrompt,
+        settings,
+        request.max_new_tokens,
+        seed=None
+    )
+
+@app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):
     """Generate text using the loaded model"""
-    global generator
+    global generator, isReachLimitContext
     
     if generator is None:
-        raise HTTPException(status_code=400, detail="No model loaded. Please load a model first using /model/load")
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = "No model loaded. Please load a model first using /model/load"
+        )
     
     try:
         # Configure sampling settings
@@ -169,31 +192,63 @@ async def generate_text(request: GenerateRequest):
         
         character = loadCharacter()
         chat = loadChat()
-        chat['chat'].append(f"{request.name}: {request.prompt}")
 
-        newPrompt = character["context"].replace(r"{USER_DIALOGUE}", "\n".join(chat['chat']))
+        chat['chat'].append(f"{request.name}: {request.prompt}")
+        chatText = "\n".join(chat['chat'])
+
+        # check if the context is larger sequence length
+        totalPrompWords = len(character["context"]) + len(chatText)
+        print(totalPrompWords)
+        if len(character["context"]) > sequenceLength:
+            return ResponseData[GenerateResponse](
+                status="error",
+                message = "context is larger than sequence length, please increase the sequence length or decrease the context"
+            )
+            
+        while totalPrompWords > sequenceLength:
+            if len(chat['chat']) > 0:
+                chat['chat'].pop(0)
+                chatText = "\n".join(chat['chat'])
+                totalPrompWords = len(character["context"]) + len(chatText)
+            else:
+                break
+
+        newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
 
         print(newPrompt)
-        # Generate text
-        output = generator.generate_simple(
-            newPrompt,
-            settings,
-            request.max_new_tokens,
-            seed=None
-        )
 
+        output = generateText(newPrompt,settings,request)
         newOutput = output[len(newPrompt):].strip()
+
+        # check if output is empty so that the prompt token is decreased by removing past chat
+        if newOutput == "":
+            for i in range(0,2):
+                if len(chat['chat']) > 0:
+                    chat['chat'].pop(0)
+                output = generateText(newPrompt,settings,request)
+                newOutput = output[len(newPrompt):].strip()
+                isReachLimitContext = True
+
         chat['chat'].append(f"{character['name']}: {newOutput}")
 
         saveChat(chat)
         
-        return GenerateResponse(
+        generateResponse = GenerateResponse(
             generated_text=newOutput,
-            words=len(output.split(" ")) - len(newPrompt.split(" "))
+            prompt_words=len(newPrompt.split(" ")),
+            output_words=len(output.split(" ")) - len(newPrompt.split(" "))
         )
-        
+
+        return ResponseData[GenerateResponse](
+            status="success",
+            data = generateResponse,
+            message = ""
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Generation failed: {str(e)}"
+        )
 
 @app.post("/model/unload")
 async def unload_model():
