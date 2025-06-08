@@ -10,4 +10,3 @@ rvc_gui/models/
 rvc_gui/hubert_base.pt
 EmotiVoice/WangZeJun/
 EmotiVoice/outputs/
-chat_history/
