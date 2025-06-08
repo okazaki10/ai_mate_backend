@@ -1,13 +1,13 @@
 
-outputs/
+Emotivoice_RVC_TTS/outputs/
 # Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.pyc
-rvc_gui/models/
-rvc_gui/hubert_base.pt
-EmotiVoice/WangZeJun/
-EmotiVoice/outputs/
+Emotivoice_RVC_TTS/__pycache__/
+Emotivoice_RVC_TTS/*.pyc
+Emotivoice_RVC_TTS/*.pyo
+Emotivoice_RVC_TTS/*.pyd
+Emotivoice_RVC_TTS/*.pyc
+Emotivoice_RVC_TTS/rvc_gui/models/
+Emotivoice_RVC_TTS/rvc_gui/hubert_base.pt
+Emotivoice_RVC_TTS/EmotiVoice/WangZeJun/
+Emotivoice_RVC_TTS/EmotiVoice/outputs/
 chat_history/

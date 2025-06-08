@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from pathlib import Path
 from typing import Generic, TypeVar
+from Emotivoice_RVC_TTS import script
 import uvicorn
 import os
 import yaml
@@ -137,7 +138,7 @@ def load_model():
         raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")
 
 load_model()
-
+script.setup()
 
 @app.post("/delete-chat", response_model=ResponseData[GenerateResponse])
 async def deleteChat(request: DeleteRequest):
@@ -219,6 +220,9 @@ async def generate_text(request: GenerateRequest):
                 message = "context is larger than sequence length, please increase the sequence length or decrease the context or decrease the chat prompt"
             )
         
+    
+        script.output_modifier(newOutput)
+
         outputToken = tokenizer.encode(newOutput).shape[-1]
 
         chat['chat'].append(f"{character['name']}: {newOutput}")
