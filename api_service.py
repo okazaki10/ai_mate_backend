@@ -113,7 +113,7 @@ def load_model():
         config.model_dir = modelPath
         config.prepare()
         
-        sequenceLength = 3100
+        sequenceLength = 4096
         # Set sequence length
         config.max_seq_len = sequenceLength
         
