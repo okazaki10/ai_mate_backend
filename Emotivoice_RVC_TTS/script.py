@@ -456,6 +456,7 @@ def output_modifier(string):
     # Restore processing_message
     print("*Is typing...*")
 
+    base64_encoded = ""
     try:
         refresh_model = False
 
@@ -538,6 +539,10 @@ def output_modifier(string):
         if params['show_text']:
             string += f'\n\n{original_string}'
 
+        with open(output_file, 'rb') as wav_file:
+            wav_data = wav_file.read()
+            base64_encoded = base64.b64encode(wav_data).decode('utf-8')
+
     except Exception as e:
         string = f'Emotivoice TTS error: \n\n{traceback.format_exc()}'
         string += f'-----------\n\n{original_string}'
@@ -545,7 +550,7 @@ def output_modifier(string):
         
     
     swap_model_for_llm()
-    return string
+    return base64_encoded
 
 
 def generate_audio(output_dir, output_file, texts):

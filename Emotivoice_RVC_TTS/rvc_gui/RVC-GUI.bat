@@ -9,10 +9,10 @@ set "runtimeFolder=%scriptDir%runtime"
 REM Check if the runtime folder exists
 
 REM Check if the runtime folder exists
-if exist "..\..\..\installer_files\env\python.exe" (
+if exist "..\..\..\..\installer_files\env\python.exe" (
     REM Runtime folder exists, so run the file using the runtime Python
     echo Running with the runtime Python, Please wait.
-     "..\..\..\installer_files\env\python.exe" rvcgui.py --pycmd "..\..\..\installer_files\env\python.exe"
+     "..\..\..\..\installer_files\env\python.exe" rvcgui.py --pycmd "..\..\..\..\installer_files\env\python.exe"
       pause
 ) else (
     REM Runtime folder does not exist, so run the file using the system Python

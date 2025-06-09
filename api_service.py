@@ -55,6 +55,7 @@ class GenerateResponse(BaseModel):
     full_response: str = ""
     prompt_token: int = 0
     output_token: int = 0
+    base64_audio: str = ""
 
 T = TypeVar("T")
 
@@ -93,8 +94,7 @@ def findFirstDir(dir):
         if index >= 0:
             ext = item[index:]
         if ext == "":
-            if item == "silicon-maid-7b":
-                return item
+            return item
 
 def load_model():
     """Load an ExLlamaV2 model"""
@@ -102,7 +102,7 @@ def load_model():
     
     try:
         # Check if model path exists
-        modelDir = os.path.join("..", "..", "user_data", "models")
+        modelDir = os.path.join("models")
        
         modelPath = os.path.join(modelDir,findFirstDir(modelDir))
 
@@ -220,8 +220,7 @@ async def generate_text(request: GenerateRequest):
                 message = "context is larger than sequence length, please increase the sequence length or decrease the context or decrease the chat prompt"
             )
         
-    
-        script.output_modifier(newOutput)
+        base64_audio = script.output_modifier(newOutput)
 
         outputToken = tokenizer.encode(newOutput).shape[-1]
 
@@ -232,7 +231,8 @@ async def generate_text(request: GenerateRequest):
         generateResponse = GenerateResponse(
             generated_text=newOutput,
             prompt_token=promptTokens,
-            output_token=outputToken
+            output_token=outputToken,
+            base64_audio=base64_audio
         )
 
         return ResponseData[GenerateResponse](
@@ -282,6 +282,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app,  # Pass the app directly instead of module string
         host="0.0.0.0",
-        port=8000,
+        port=7874,
         reload=False  # Set to True for development
     )

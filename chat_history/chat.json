@@ -1,3 +1,10 @@
 {
-    "chat": []
+    "chat": [
+        "raka: No, I'm not going to see.",
+        "Hatsune Miku: [CONCERNED] Don't worry, you can still enjoy the concert through live streams. Let me know if you need help finding one!",
+        "raka: No, please, I don't want to buy iPhone Pro Max. It's too expensive.",
+        "Hatsune Miku: [SUPPORTIVE] I understand your concern. There are many other smartphones with great camera quality at a lower price. Let's explore some options together!\n[ACTION:SEARCH] Camera phones under $500",
+        "raka: Oh, I don't know.",
+        "Hatsune Miku: [EMPATHETIC] It's okay to feel unsure. Let's look at some camera phone features and specifications to help you make a decision. Just let me know what you're looking for!"
+    ]
 }
