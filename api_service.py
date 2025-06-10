@@ -39,6 +39,7 @@ class ModelLoadRequest(BaseModel):
 class GenerateRequest(BaseModel):
     name: str = ""
     prompt: str = ""
+    language: str = ""
     max_new_tokens: Optional[int] = 200
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.9
@@ -220,6 +221,11 @@ async def generate_text(request: GenerateRequest):
                 message = "context is larger than sequence length, please increase the sequence length or decrease the context or decrease the chat prompt"
             )
         
+        if request.language == "id":
+            script.params['rvc_language'] = "indonesia"
+        else:
+            script.params['rvc_language'] = "english_or_chinese"
+
         base64_audio = script.output_modifier(newOutput)
 
         outputToken = tokenizer.encode(newOutput).shape[-1]
