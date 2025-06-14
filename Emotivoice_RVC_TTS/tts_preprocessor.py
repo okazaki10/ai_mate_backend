@@ -4,6 +4,7 @@ import re
 
 from num2words import num2words
 from collections import defaultdict
+import emoji
 
 punctuation = r'[\s,.?!/)\]>]'
 alphabet_map = {
@@ -122,6 +123,10 @@ def parse_brackets_keep_all(text):
     
     return dict(params)
 
+def remove_emojis_with_library(text):
+    """Remove emojis using the emoji library"""
+    return emoji.replace_emoji(text, replace='')
+    
 def remove_surrounded_chars(string):
     # first this expression will check if there is a string nested exclusively between a alt=
     # and a style= string. This would correspond to only a the alt text of an embedded image
@@ -138,8 +143,6 @@ def remove_surrounded_chars(string):
     
     # Remove parentheses-surrounded text
     string = re.sub(r'\([^)]*\)', '', string)
-
-    print(f"all dictionary {parse_brackets_keep_all(string)}")
 
     # Remove square-surrounded text
     string = re.sub(r'\[[^\]]*\]', '', string)

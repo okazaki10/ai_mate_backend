@@ -54,6 +54,7 @@ streamlit
 transformers==4.50.*
 python-multipart
 edge-tts
+emoji
 git+https://github.com/openai/whisper.git
 # https://github.com/SYSTRAN/faster-whisper/discussions/715#discussioncomment-10903540
 

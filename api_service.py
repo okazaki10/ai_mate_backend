@@ -91,10 +91,18 @@ def loadCharacter():
     return yaml.safe_load(file_contents)
 
 def saveChat(chatMap):
-    with open("chat_history/chat.json", "w") as json_file:
+    filepath = Path("chat_history/chat.json")
+    if not filepath.exists():
+        return ""
+    
+    with open(filepath, "w") as json_file:
         json.dump(chatMap, json_file, indent=4)
 
 def loadChat():
+    filepath = Path("chat_history/chat.json")
+    if not filepath.exists():
+        return ""
+    
     with open("chat_history/chat.json", "r") as json_file:
         return json.load(json_file)
     return ""
@@ -216,10 +224,11 @@ async def generate_text(request: GenerateRequest):
     character = loadCharacter()
     chat = loadChat()
     
-    translator = Translator()
-    promptTranslated = await translator.translate(request.prompt, dest="en")
-    print(f"test : {promptTranslated}")
-    request.prompt = promptTranslated.text
+    if request.language != "en":
+        translator = Translator()
+        promptTranslated = await translator.translate(request.prompt, dest="en")
+        print(f"test : {promptTranslated}")
+        request.prompt = promptTranslated.text
 
     chat['chat'].append(f"{request.name}: {request.prompt}")
     chatText = "\n".join(chat['chat'])
@@ -259,13 +268,17 @@ async def generate_text(request: GenerateRequest):
     actionParams = parse_brackets_keep_all(tts_output)
 
     tts_output = script.tts_preprocessor.replace_invalid_chars(tts_output)
-    tts_output = script.tts_preprocessor.replace_abbreviations(tts_output)
     tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
+    tts_output = script.tts_preprocessor.remove_emojis_with_library(tts_output)
+    if request.language == "en":
+        tts_output = script.tts_preprocessor.replace_abbreviations(tts_output)
     
-    outputTranslated = await translator.translate(tts_output, dest=promptTranslated.src)
-    tts_output = outputTranslated.text
-    print(f"tts output {tts_output}")
+    if request.language != "en":
+        outputTranslated = await translator.translate(tts_output, dest=promptTranslated.src)
+        tts_output = outputTranslated.text
+        print(f"tts output {tts_output}")
 
+    # tts
     if request.language != "en":
         voices = await VoicesManager.create()
         voice = voices.find(Gender="Female", Language=promptTranslated.src)
@@ -309,6 +322,7 @@ async def generate_text(request: GenerateRequest):
     generateResponse = GenerateResponse(
         generated_text=tts_output,
         prompt_token=promptTokens,
+        full_response=newOutput,
         output_token=outputToken,
         base64_audio=base64_audio,
         action_params=actionParams
