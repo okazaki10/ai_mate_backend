@@ -8,6 +8,13 @@ import uvicorn
 import os
 import yaml
 import json
+import edge_tts
+from edge_tts import VoicesManager
+from googletrans import Translator
+import re
+from collections import defaultdict
+from pydub import AudioSegment
+import base64
 
 # ExLlamaV2 imports
 from exllamav2 import (
@@ -50,6 +57,10 @@ class GenerateRequest(BaseModel):
 class DeleteRequest(BaseModel):
     index: int = 0
 
+class ActionParams(BaseModel):
+    emotions: list[str] = []
+    actions: list[str] = []
+
 class GenerateResponse(BaseModel):
     generated_text: str = ""
     prompt: str = ""
@@ -57,6 +68,7 @@ class GenerateResponse(BaseModel):
     prompt_token: int = 0
     output_token: int = 0
     base64_audio: str = ""
+    action_params: ActionParams = ActionParams()
 
 T = TypeVar("T")
 
@@ -141,6 +153,24 @@ def load_model():
 load_model()
 script.setup()
 
+if script.rvcModels:
+    script.onChangeRvcModel(script.rvcModels[0])
+else:
+    print("please load rvc model")
+
+def parse_brackets_keep_all(text):
+    brackets = re.findall(r'\[([^\]]*)\]', text)
+    params = defaultdict(list)
+    
+    for bracket in brackets:
+        if ':' in bracket:
+            key, value = bracket.split(':', 1)
+            params[key].append(value)
+        else:
+            params[bracket].append('')
+    
+    return dict(params)
+
 @app.post("/delete-chat", response_model=ResponseData[GenerateResponse])
 async def deleteChat(request: DeleteRequest):
     """Generate text using the loaded model"""
@@ -179,78 +209,116 @@ async def generate_text(request: GenerateRequest):
             status="error",
             message = "No model loaded. Please load a model first using /model/load"
         )
+
+    # Configure sampling settings
+    settings = ExLlamaV2Sampler.Settings()
     
-    try:
-        # Configure sampling settings
-        settings = ExLlamaV2Sampler.Settings()
-        
-        character = loadCharacter()
-        chat = loadChat()
+    character = loadCharacter()
+    chat = loadChat()
+    
+    translator = Translator()
+    promptTranslated = await translator.translate(request.prompt, dest="en")
+    print(f"test : {promptTranslated}")
+    request.prompt = promptTranslated.text
 
-        chat['chat'].append(f"{request.name}: {request.prompt}")
-        chatText = "\n".join(chat['chat'])
-        newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
-        print(newPrompt)
+    chat['chat'].append(f"{request.name}: {request.prompt}")
+    chatText = "\n".join(chat['chat'])
+    newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
+    print(newPrompt)
 
-        promptTokens = tokenizer.encode(newPrompt).shape[-1]
-        print(promptTokens)
+    promptTokens = tokenizer.encode(newPrompt).shape[-1]
+    print(promptTokens)
 
-        # check if the prompt token is larger than sequence length         
-        while promptTokens + request.max_new_tokens > sequenceLength:
-            if len(chat['chat']) > 0:
-                chat['chat'].pop(0)
-                chatText = "\n".join(chat['chat'])
-                newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
-                promptTokens = tokenizer.encode(newPrompt).shape[-1]
-            else:
-                break
-
-        # Generate text
-        output = generator.generate_simple(
-            newPrompt,
-            settings,
-            request.max_new_tokens,
-            seed=None
-        )
-
-        newOutput = output[len(newPrompt):].strip()
-
-        if newOutput == "":
-            return ResponseData[GenerateResponse](
-                status="error",
-                message = "context is larger than sequence length, please increase the sequence length or decrease the context or decrease the chat prompt"
-            )
-        
-        if request.language == "id":
-            script.params['rvc_language'] = "indonesia"
+    # check if the prompt token is larger than sequence length         
+    while promptTokens + request.max_new_tokens > sequenceLength:
+        if len(chat['chat']) > 0:
+            chat['chat'].pop(0)
+            chatText = "\n".join(chat['chat'])
+            newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
+            promptTokens = tokenizer.encode(newPrompt).shape[-1]
         else:
-            script.params['rvc_language'] = "english_or_chinese"
+            break
 
-        base64_audio = script.output_modifier(newOutput)
+    # Generate text
+    output = generator.generate_simple(
+        newPrompt,
+        settings,
+        request.max_new_tokens,
+        seed=None
+    )
 
-        outputToken = tokenizer.encode(newOutput).shape[-1]
+    newOutput = output[len(newPrompt):].strip()
 
-        chat['chat'].append(f"{character['name']}: {newOutput}")
-
-        saveChat(chat)
-        
-        generateResponse = GenerateResponse(
-            generated_text=newOutput,
-            prompt_token=promptTokens,
-            output_token=outputToken,
-            base64_audio=base64_audio
-        )
-
-        return ResponseData[GenerateResponse](
-            status="success",
-            data = generateResponse,
-            message = ""
-        )
-    except Exception as e:
+    if newOutput == "":
         return ResponseData[GenerateResponse](
             status="error",
-            message = f"Generation failed: {str(e)}"
+            message = "context is larger than sequence length, please increase the sequence length or decrease the context or decrease the chat prompt"
         )
+    
+    tts_output = newOutput
+    actionParams = parse_brackets_keep_all(tts_output)
+
+    tts_output = script.tts_preprocessor.replace_invalid_chars(tts_output)
+    tts_output = script.tts_preprocessor.replace_abbreviations(tts_output)
+    tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
+    
+    outputTranslated = await translator.translate(tts_output, dest=promptTranslated.src)
+    tts_output = outputTranslated.text
+    print(f"tts output {tts_output}")
+
+    if request.language != "en":
+        voices = await VoicesManager.create()
+        voice = voices.find(Gender="Female", Language=promptTranslated.src)
+    
+        OUTPUT_FILE = "test.mp3"
+        OUTPUT_FILE_WAV = "test.wav"
+        if voice:
+            voiceName = voice[0]["Name"]
+            communicate = edge_tts.Communicate(tts_output, voiceName, rate="+10%")
+            await communicate.save(OUTPUT_FILE)
+
+            audio = AudioSegment.from_mp3(OUTPUT_FILE)
+            audio.export(OUTPUT_FILE_WAV, format="wav")
+            audio_data = script.rvc.load_audio(OUTPUT_FILE_WAV, 16000)
+            script.rvc_click(audio_data, OUTPUT_FILE_WAV)
+    
+    # if request.language == "id":
+    #     script.params['rvc_language'] = "indonesia"
+    # else:
+    #     script.params['rvc_language'] = "english_or_chinese"
+    
+    base64_audio = ""
+    if request.language == "en":
+        base64_audio = script.output_modifier(tts_output)
+    else:
+        with open(OUTPUT_FILE_WAV, 'rb') as wav_file:
+            wav_data = wav_file.read()
+            base64_audio = base64.b64encode(wav_data).decode('utf-8')
+
+    outputToken = tokenizer.encode(newOutput).shape[-1]
+
+    chat['chat'].append(f"{character['name']}: {newOutput}")
+
+    saveChat(chat)
+
+    actionParams = ActionParams(
+        emotions=actionParams.get('EMOTION') or [],
+        actions=actionParams.get('ACTION') or []
+    )
+
+    generateResponse = GenerateResponse(
+        generated_text=tts_output,
+        prompt_token=promptTokens,
+        output_token=outputToken,
+        base64_audio=base64_audio,
+        action_params=actionParams
+    )
+
+    return ResponseData[GenerateResponse](
+        status="success",
+        data = generateResponse,
+        message = ""
+    )
 
 @app.post("/model/unload")
 async def unload_model():

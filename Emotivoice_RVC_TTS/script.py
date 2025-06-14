@@ -442,6 +442,9 @@ def history_modifier(history):
 
 rvcModels = rvc.refresh_model_list()
 
+def rvc_click(gen, output_file):
+    rvc.on_button_click(gen,params['rvc_model_index'],str(output_file),params['rvc_pitch'],params['rvc_crepe_hop'],params['rvc_method_entry'],params['rvc_retrieval_rate'])
+    
 def output_modifier(string):
     """
     This function is applied to the model outputs.
@@ -518,7 +521,7 @@ def output_modifier(string):
         # Call generate audio and save numpy output by wavio
         gen = generate_audio(output_dir, output_file, texts)
         if rvc.model_loaded:
-            rvc.on_button_click(gen,params['rvc_model_index'],str(output_file),params['rvc_pitch'],params['rvc_crepe_hop'],params['rvc_method_entry'],params['rvc_retrieval_rate'])
+           rvc_click(gen, output_file)
         else:
             if rvcModels:
                 indexPath = rvc.selected_model(rvcModels[0])
@@ -528,7 +531,7 @@ def output_modifier(string):
                     print("rvc model load error, using default emotivoice")
                     wavio.write(str(output_file), gen, config.sampling_rate)
                 else:
-                    rvc.on_button_click(gen,params['rvc_model_index'],str(output_file),params['rvc_pitch'],params['rvc_crepe_hop'],params['rvc_method_entry'],params['rvc_retrieval_rate'])
+                    rvc_click(gen, output_file)
             else:
                 print("no rvc model loaded, using default emotivoice")
                 wavio.write(str(output_file), gen, config.sampling_rate)
