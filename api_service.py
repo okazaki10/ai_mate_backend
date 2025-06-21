@@ -253,7 +253,6 @@ async def generate_text(request: GenerateRequest):
         chatTranslated=request.prompt
     )
 
-    # chat.messages.append(f"{request.name}: {request.prompt}")
     chat.messages.append(chatTemplate)
     chatText = "\n".join(convertChatDialogue(chat.messages))
     newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
@@ -350,8 +349,6 @@ async def generate_text(request: GenerateRequest):
         chatTranslated=translatedResponse,
         actionParams=actionParams
     )
-
-    # chat.messages.append(f"{character['name']}: {newOutput}")
 
     chat.messages.append(chatTemplateOutput)
 
