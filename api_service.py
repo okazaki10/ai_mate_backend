@@ -61,6 +61,15 @@ class ActionParams(BaseModel):
     emotions: list[str] = []
     actions: list[str] = []
 
+class ChatTemplate(BaseModel):
+    name: str = ""
+    chat: str = ""
+    chatTranslated: str = ""
+    actionParams: ActionParams = ActionParams()
+
+class ChatTemplates(BaseModel):
+    messages: list[ChatTemplate] = []
+
 class GenerateResponse(BaseModel):
     generated_text: str = ""
     prompt: str = ""
@@ -90,21 +99,22 @@ def loadCharacter():
     file_contents = open(filepath, 'r', encoding='utf-8').read()
     return yaml.safe_load(file_contents)
 
-def saveChat(chatMap):
+def saveChat(chat: ChatTemplates):
     filepath = Path("chat_history/chat.json")
     if not filepath.exists():
         return ""
     
     with open(filepath, "w") as json_file:
-        json.dump(chatMap, json_file, indent=4)
+        json.dump(chat.model_dump(), json_file, indent=4)
 
-def loadChat():
+def loadChat() -> ChatTemplates:
     filepath = Path("chat_history/chat.json")
     if not filepath.exists():
         return ""
     
     with open("chat_history/chat.json", "r") as json_file:
-        return json.load(json_file)
+        data = json.load(json_file)
+        return ChatTemplates(**data)
     return ""
 
 def findFirstDir(dir):
@@ -206,7 +216,13 @@ async def deleteChat(request: DeleteRequest):
             status="error",
             message = f"Delete failed: {str(e)}"
         )
-    
+
+def convertChatDialogue(chatTemplates: list[ChatTemplate]):
+    chat = []
+    for chatTemplate in chatTemplates:
+        chat.append(f"{chatTemplate.name}: {chatTemplate.chat}")
+    return chat
+
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):
     """Generate text using the loaded model"""
@@ -224,14 +240,22 @@ async def generate_text(request: GenerateRequest):
     character = loadCharacter()
     chat = loadChat()
     
+    translatedPrompt = request.prompt
     if request.language != "en":
         translator = Translator()
-        promptTranslated = await translator.translate(request.prompt, dest="en")
+        promptTranslated = await translator.translate(request.prompt, dest="en", src=request.language)
         print(f"test : {promptTranslated}")
-        request.prompt = promptTranslated.text
+        translatedPrompt = promptTranslated.text
 
-    chat['chat'].append(f"{request.name}: {request.prompt}")
-    chatText = "\n".join(chat['chat'])
+    chatTemplate = ChatTemplate(
+        name=request.name,
+        chat=translatedPrompt,
+        chatTranslated=request.prompt
+    )
+
+    # chat.messages.append(f"{request.name}: {request.prompt}")
+    chat.messages.append(chatTemplate)
+    chatText = "\n".join(convertChatDialogue(chat.messages))
     newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
     print(newPrompt)
 
@@ -240,9 +264,9 @@ async def generate_text(request: GenerateRequest):
 
     # check if the prompt token is larger than sequence length         
     while promptTokens + request.max_new_tokens > sequenceLength:
-        if len(chat['chat']) > 0:
-            chat['chat'].pop(0)
-            chatText = "\n".join(chat['chat'])
+        if len(chat.messages) > 0:
+            chat.messages.pop(0)
+            chatText = "\n".join(chat.messages)
             newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
             promptTokens = tokenizer.encode(newPrompt).shape[-1]
         else:
@@ -269,19 +293,24 @@ async def generate_text(request: GenerateRequest):
 
     tts_output = script.tts_preprocessor.replace_invalid_chars(tts_output)
     tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
-    tts_output = script.tts_preprocessor.remove_emojis_with_library(tts_output)
+    newCleanedOutput = tts_output
+    translatedResponse = newCleanedOutput
+
     if request.language == "en":
+        tts_output = script.tts_preprocessor.remove_emojis_with_library(tts_output)
         tts_output = script.tts_preprocessor.replace_abbreviations(tts_output)
     
     if request.language != "en":
-        outputTranslated = await translator.translate(tts_output, dest=promptTranslated.src)
-        tts_output = outputTranslated.text
-        print(f"tts output {tts_output}")
+        outputTranslated = await translator.translate(tts_output, dest=request.language, src="en")
+        translatedResponse = outputTranslated.text
+        tts_output = script.tts_preprocessor.remove_emojis_with_library(outputTranslated.text)        
+    
+    print(f"tts output {tts_output}")
 
     # tts
     if request.language != "en":
         voices = await VoicesManager.create()
-        voice = voices.find(Gender="Female", Language=promptTranslated.src)
+        voice = voices.find(Gender="Female", Language=request.language)
     
         OUTPUT_FILE = "test.mp3"
         OUTPUT_FILE_WAV = "test.wav"
@@ -310,19 +339,27 @@ async def generate_text(request: GenerateRequest):
 
     outputToken = tokenizer.encode(newOutput).shape[-1]
 
-    chat['chat'].append(f"{character['name']}: {newOutput}")
-
-    saveChat(chat)
-
     actionParams = ActionParams(
         emotions=actionParams.get('EMOTION') or [],
         actions=actionParams.get('ACTION') or []
     )
+    
+    chatTemplateOutput = ChatTemplate(
+        name=character['name'],
+        chat=newCleanedOutput,
+        chatTranslated=translatedResponse,
+        actionParams=actionParams
+    )
 
+    # chat.messages.append(f"{character['name']}: {newOutput}")
+
+    chat.messages.append(chatTemplateOutput)
+
+    saveChat(chat)
+    
     generateResponse = GenerateResponse(
-        generated_text=tts_output,
+        generated_text=translatedResponse,
         prompt_token=promptTokens,
-        full_response=newOutput,
         output_token=outputToken,
         base64_audio=base64_audio,
         action_params=actionParams
