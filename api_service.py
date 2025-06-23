@@ -71,6 +71,7 @@ class ChatTemplates(BaseModel):
     messages: list[ChatTemplate] = []
 
 class GenerateResponse(BaseModel):
+    character_name: str = ""
     generated_text: str = ""
     prompt: str = ""
     full_response: str = ""
@@ -189,6 +190,23 @@ def parse_brackets_keep_all(text):
     
     return dict(params)
 
+@app.get("/get-chat")
+async def getChat():    
+    try:
+        chat = loadChat()
+        chatText = "\n\n".join(convertChatDialogue(chat.messages))
+
+        return ResponseData[str](
+            status="success",
+            message = "",
+            data=chatText
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Load chat failed: {str(e)}"
+        )
+    
 @app.post("/delete-chat", response_model=ResponseData[GenerateResponse])
 async def deleteChat(request: DeleteRequest):
     """Generate text using the loaded model"""
@@ -288,6 +306,7 @@ async def generate_text(request: GenerateRequest):
         )
     
     tts_output = newOutput
+    print(f"original output {tts_output}")
     actionParams = parse_brackets_keep_all(tts_output)
 
     tts_output = script.tts_preprocessor.replace_invalid_chars(tts_output)
@@ -302,7 +321,9 @@ async def generate_text(request: GenerateRequest):
     if request.language != "en":
         outputTranslated = await translator.translate(tts_output, dest=request.language, src="en")
         translatedResponse = outputTranslated.text
-        tts_output = script.tts_preprocessor.remove_emojis_with_library(outputTranslated.text)        
+        tts_output = script.tts_preprocessor.remove_emojis_with_library(outputTranslated.text)
+
+    newCleanedOutput = script.tts_preprocessor.remove_emojis_with_library(newCleanedOutput)        
     
     print(f"tts output {tts_output}")
 
@@ -328,9 +349,14 @@ async def generate_text(request: GenerateRequest):
     # else:
     #     script.params['rvc_language'] = "english_or_chinese"
     
+    actionParams = ActionParams(
+        emotions=actionParams.get('EMOTION') or [],
+        actions=actionParams.get('ACTION') or []
+    )
+
     base64_audio = ""
     if request.language == "en":
-        base64_audio = script.output_modifier(tts_output)
+        base64_audio = script.output_modifier(actionParams.emotions[0] if actionParams.emotions else "", tts_output)
     else:
         with open(OUTPUT_FILE_WAV, 'rb') as wav_file:
             wav_data = wav_file.read()
@@ -338,11 +364,6 @@ async def generate_text(request: GenerateRequest):
 
     outputToken = tokenizer.encode(newOutput).shape[-1]
 
-    actionParams = ActionParams(
-        emotions=actionParams.get('EMOTION') or [],
-        actions=actionParams.get('ACTION') or []
-    )
-    
     chatTemplateOutput = ChatTemplate(
         name=character['name'],
         chat=newCleanedOutput,
@@ -355,6 +376,7 @@ async def generate_text(request: GenerateRequest):
     saveChat(chat)
     
     generateResponse = GenerateResponse(
+        character_name=character["name"],
         generated_text=translatedResponse,
         prompt_token=promptTokens,
         output_token=outputToken,

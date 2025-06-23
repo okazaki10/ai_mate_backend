@@ -445,7 +445,7 @@ rvcModels = rvc.refresh_model_list()
 def rvc_click(gen, output_file):
     rvc.on_button_click(gen,params['rvc_model_index'],str(output_file),params['rvc_pitch'],params['rvc_crepe_hop'],params['rvc_method_entry'],params['rvc_retrieval_rate'])
     
-def output_modifier(string):
+def output_modifier(emotionPrompt: str = "",string: str = ""):
     """
     This function is applied to the model outputs.
     """
@@ -495,7 +495,7 @@ def output_modifier(string):
         string = tts_preprocessor.replace_invalid_chars(string)
         string = tts_preprocessor.replace_abbreviations(string)
         string = tts_preprocessor.clean_whitespace(string)
-        
+
         if __EMOTI_TTS_DEBUG__:
             print(f"Emotivoice output_modifier after tts_preprocessor: \n{string}")
 
@@ -519,7 +519,7 @@ def output_modifier(string):
             texts = split_and_recombine_text(string, desired_length=params['sentence_length'], max_length=1000)
 
         # Call generate audio and save numpy output by wavio
-        gen = generate_audio(output_dir, output_file, texts)
+        gen = generate_audio(emotionPrompt, texts)
         if rvc.model_loaded:
            rvc_click(gen, output_file)
         else:
@@ -556,14 +556,16 @@ def output_modifier(string):
     return base64_encoded
 
 
-def generate_audio(output_dir, output_file, texts):
+def generate_audio(emotionPrompt, texts):
     # only cat if it's needed
     if len(texts) <= 0:
         return []
     
+    print(f"emotion prompt {emotionPrompt}")
+
     all_parts = []
     for j, text in enumerate(texts):
-        gen = tts(params['prompt'], text, params['voice'], models)
+        gen = tts(emotionPrompt, text, params['voice'], models)
         all_parts.append(gen)
 
     # Emotivoice requires in16 conversion from float
