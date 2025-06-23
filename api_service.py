@@ -312,7 +312,8 @@ async def generate_text(request: GenerateRequest):
     tts_output = script.tts_preprocessor.replace_invalid_chars(tts_output)
     tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
     newCleanedOutput = tts_output
-    translatedResponse = newCleanedOutput
+    tts_output = script.tts_preprocessor.removeParentheses(tts_output)
+    translatedResponse = tts_output
 
     if request.language == "en":
         tts_output = script.tts_preprocessor.remove_emojis_with_library(tts_output)
