@@ -194,7 +194,7 @@ def parse_brackets_keep_all(text):
 async def getChat():    
     try:
         chat = loadChat()
-        chatText = "\n\n".join(convertChatDialogue(chat.messages))
+        chatText = "\n\n".join(convertChatDialogueTranslated(chat.messages))
 
         return ResponseData[str](
             status="success",
@@ -239,6 +239,12 @@ def convertChatDialogue(chatTemplates: list[ChatTemplate]):
     chat = []
     for chatTemplate in chatTemplates:
         chat.append(f"{chatTemplate.name}: {chatTemplate.chat}")
+    return chat
+
+def convertChatDialogueTranslated(chatTemplates: list[ChatTemplate]):
+    chat = []
+    for chatTemplate in chatTemplates:
+        chat.append(f"{chatTemplate.name}: {chatTemplate.chatTranslated}")
     return chat
 
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
@@ -333,8 +339,8 @@ async def generate_text(request: GenerateRequest):
         voices = await VoicesManager.create()
         voice = voices.find(Gender="Female", Language=request.language)
     
-        OUTPUT_FILE = "test.mp3"
-        OUTPUT_FILE_WAV = "test.wav"
+        OUTPUT_FILE = "edge_tts_output.mp3"
+        OUTPUT_FILE_WAV = "edge_tts_output.wav"
         if voice:
             voiceName = voice[0]["Name"]
             communicate = edge_tts.Communicate(tts_output, voiceName, rate="+10%")
@@ -376,7 +382,7 @@ async def generate_text(request: GenerateRequest):
 
     saveChat(chat)
     
-    generateResponse = GenerateResponse(
+    generateResponse = GenerateResponse( 
         character_name=character["name"],
         generated_text=translatedResponse,
         prompt_token=promptTokens,
