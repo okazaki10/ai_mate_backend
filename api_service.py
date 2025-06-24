@@ -92,8 +92,16 @@ class ModelInfo(BaseModel):
     path: Optional[str] = None
     max_seq_len: Optional[int] = None
 
+def loadCharacterTemplate():
+    filepath = Path('character_template/alpaca_template.yaml')
+    if not filepath.exists():
+        return ""
+
+    file_contents = open(filepath, 'r', encoding='utf-8').read()
+    return yaml.safe_load(file_contents)
+
 def loadCharacter():
-    filepath = Path('character/character.yaml')
+    filepath = Path('character/Hatsune_Miku.yaml')
     if not filepath.exists():
         return ""
 
@@ -109,14 +117,17 @@ def saveChat(chat: ChatTemplates):
         json.dump(chat.model_dump(), json_file, indent=4)
 
 def loadChat() -> ChatTemplates:
-    filepath = Path("chat_history/chat.json")
-    if not filepath.exists():
-        return ""
-    
-    with open("chat_history/chat.json", "r") as json_file:
-        data = json.load(json_file)
-        return ChatTemplates(**data)
-    return ""
+    try:
+        filepath = Path("chat_history/chat.json")
+        if not filepath.exists():
+            return ChatTemplates()
+        
+        with open("chat_history/chat.json", "r") as json_file:
+            data = json.load(json_file)
+            return ChatTemplates(**data)
+    except Exception as e:
+        return ChatTemplates()
+    return ChatTemplates()
 
 def findFirstDir(dir):
     items = os.listdir(dir)
@@ -221,7 +232,7 @@ async def deleteChat(request: DeleteRequest):
     try:
         chat = loadChat()
 
-        chat['chat'].pop(request.index)
+        chat.messages.pop(request.index)
 
         saveChat(chat)
 
@@ -231,6 +242,44 @@ async def deleteChat(request: DeleteRequest):
         )
     except Exception as e:
         return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Delete failed: {str(e)}"
+        )
+
+@app.delete("/delete-last-chat", response_model=ResponseData[str])
+async def deleteLastChat():
+    """Generate text using the loaded model"""
+    global generator
+    
+    if generator is None:
+        return ResponseData[str](
+            status="error",
+            message = "No model loaded. Please load a model first using /model/load"
+        )
+    
+    try:
+        chat = loadChat()
+
+        if chat.messages:
+            chat.messages.pop()
+        else:
+            return ResponseData[str](
+                status="success",
+                message = "",
+                data = ""
+            )
+
+        chatText = "\n\n".join(convertChatDialogueTranslated(chat.messages))
+
+        saveChat(chat)
+
+        return ResponseData[str](
+            status="success",
+            message = "",
+            data = chatText
+        )
+    except Exception as e:
+        return ResponseData[str](
             status="error",
             message = f"Delete failed: {str(e)}"
         )
@@ -247,6 +296,13 @@ def convertChatDialogueTranslated(chatTemplates: list[ChatTemplate]):
         chat.append(f"{chatTemplate.name}: {chatTemplate.chatTranslated}")
     return chat
 
+def replaceContextPrompt(characterTemplate, character, chatText):
+    newPrompt = characterTemplate["CONTEXT"]
+    newPrompt = newPrompt.replace(r"{USER_DIALOGUE}", chatText)
+    newPrompt = newPrompt.replace(r"{SYSTEM_NAME}", character["NAME"])
+    newPrompt = newPrompt.replace(r"{DESCRIPTION}", character["DESCRIPTION"])
+    return newPrompt
+
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):
     """Generate text using the loaded model"""
@@ -261,6 +317,7 @@ async def generate_text(request: GenerateRequest):
     # Configure sampling settings
     settings = ExLlamaV2Sampler.Settings()
     
+    characterTemplate = loadCharacterTemplate()
     character = loadCharacter()
     chat = loadChat()
     
@@ -279,7 +336,7 @@ async def generate_text(request: GenerateRequest):
 
     chat.messages.append(chatTemplate)
     chatText = "\n".join(convertChatDialogue(chat.messages))
-    newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
+    newPrompt = replaceContextPrompt(characterTemplate, character, chatText)
     print(newPrompt)
 
     promptTokens = tokenizer.encode(newPrompt).shape[-1]
@@ -290,7 +347,7 @@ async def generate_text(request: GenerateRequest):
         if len(chat.messages) > 0:
             chat.messages.pop(0)
             chatText = "\n".join(convertChatDialogue(chat.messages))
-            newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
+            newPrompt = replaceContextPrompt(characterTemplate, character, chatText)
             promptTokens = tokenizer.encode(newPrompt).shape[-1]
         else:
             break
@@ -374,7 +431,7 @@ async def generate_text(request: GenerateRequest):
     outputToken = tokenizer.encode(newOutput).shape[-1]
 
     chatTemplateOutput = ChatTemplate(
-        name=character['name'],
+        name=character['NAME'],
         chat=newCleanedOutput,
         chatTranslated=translatedResponse,
         actionParams=actionParams
@@ -385,7 +442,7 @@ async def generate_text(request: GenerateRequest):
     saveChat(chat)
     
     generateResponse = GenerateResponse( 
-        character_name=character["name"],
+        character_name=character["NAME"],
         generated_text=translatedResponse,
         prompt_token=promptTokens,
         output_token=outputToken,
