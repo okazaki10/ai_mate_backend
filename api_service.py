@@ -285,11 +285,11 @@ async def generate_text(request: GenerateRequest):
     promptTokens = tokenizer.encode(newPrompt).shape[-1]
     print(promptTokens)
 
-    # check if the prompt token is larger than sequence length         
+    # check if the prompt token is larger than sequence length, if it's larger, then the old dialogue will be removed the model can produce output         
     while promptTokens + request.max_new_tokens > sequenceLength:
         if len(chat.messages) > 0:
             chat.messages.pop(0)
-            chatText = "\n".join(chat.messages)
+            chatText = "\n".join(convertChatDialogue(chat.messages))
             newPrompt = character["context"].replace(r"{USER_DIALOGUE}", chatText)
             promptTokens = tokenizer.encode(newPrompt).shape[-1]
         else:
@@ -314,7 +314,8 @@ async def generate_text(request: GenerateRequest):
     tts_output = newOutput
     print(f"original output {tts_output}")
     actionParams = parse_brackets_keep_all(tts_output)
-
+    
+    # preprocess tts and output generation text, tts doesn't include emoji or emotion, but generation text does
     tts_output = script.tts_preprocessor.replace_invalid_chars(tts_output)
     tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
     newCleanedOutput = tts_output
@@ -334,7 +335,7 @@ async def generate_text(request: GenerateRequest):
     
     print(f"tts output {tts_output}")
 
-    # tts
+    # edge tts for non english language
     if request.language != "en":
         voices = await VoicesManager.create()
         voice = voices.find(Gender="Female", Language=request.language)
@@ -361,6 +362,7 @@ async def generate_text(request: GenerateRequest):
         actions=actionParams.get('ACTION') or []
     )
 
+    # emotivoice tts for english language
     base64_audio = ""
     if request.language == "en":
         base64_audio = script.output_modifier(actionParams.emotions[0] if actionParams.emotions else "", tts_output)

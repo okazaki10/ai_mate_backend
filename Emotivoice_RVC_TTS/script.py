@@ -565,7 +565,8 @@ def generate_audio(emotionPrompt, texts):
 
     all_parts = []
     for j, text in enumerate(texts):
-        gen = tts(emotionPrompt, text, params['voice'], models)
+        # params['voice']
+        gen = tts(emotionPrompt, text, "8975", models)
         all_parts.append(gen)
 
     # Emotivoice requires in16 conversion from float
