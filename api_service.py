@@ -45,6 +45,7 @@ class ModelLoadRequest(BaseModel):
 
 class GenerateRequest(BaseModel):
     name: str = ""
+    character_name: str = ""
     prompt: str = ""
     language: str = ""
     max_new_tokens: Optional[int] = 200
@@ -54,8 +55,11 @@ class GenerateRequest(BaseModel):
     token_repetition_penalty: Optional[float] = 1.1
     stop_strings: Optional[list] = None
 
-class DeleteRequest(BaseModel):
-    index: int = 0
+class Character(BaseModel):
+    name: str = ""
+    description: str = ""
+    rvc_model: str = ""
+    vrm_path: str = ""
 
 class ActionParams(BaseModel):
     emotions: list[str] = []
@@ -69,6 +73,9 @@ class ChatTemplate(BaseModel):
 
 class ChatTemplates(BaseModel):
     messages: list[ChatTemplate] = []
+
+class Characters(BaseModel):
+    characters: list[Character] = []
 
 class GenerateResponse(BaseModel):
     character_name: str = ""
@@ -108,26 +115,50 @@ def loadCharacter():
     file_contents = open(filepath, 'r', encoding='utf-8').read()
     return yaml.safe_load(file_contents)
 
-def saveChat(chat: ChatTemplates):
-    filepath = Path("chat_history/chat.json")
-    if not filepath.exists():
-        return ""
+def saveChat(chat: ChatTemplates, characterName):
+    filepath = Path(f"chat_history/{characterName}.json")
     
     with open(filepath, "w") as json_file:
         json.dump(chat.model_dump(), json_file, indent=4)
 
-def loadChat() -> ChatTemplates:
+def deleteChatFile(characterName):
+    filepath = Path(f"chat_history/{characterName}.json")
+    if filepath.exists():
+        filepath.unlink()
+
+def saveCharacter(characters: Characters):
+    filepath = Path("characters/characters.json")
+    if not filepath.exists():
+        return ""
+    
+    with open(filepath, "w") as json_file:
+        json.dump(characters.model_dump(), json_file, indent=4)
+
+def loadChat(characterName) -> ChatTemplates:
     try:
-        filepath = Path("chat_history/chat.json")
+        filepath = Path(f"chat_history/{characterName}.json")
         if not filepath.exists():
             return ChatTemplates()
         
-        with open("chat_history/chat.json", "r") as json_file:
+        with open(filepath, "r") as json_file:
             data = json.load(json_file)
             return ChatTemplates(**data)
     except Exception as e:
         return ChatTemplates()
     return ChatTemplates()
+
+def loadCharacters() -> Characters:
+    try:
+        filepath = Path("characters/characters.json")
+        if not filepath.exists():
+            return Characters()
+        
+        with open("characters/characters.json", "r") as json_file:
+            data = json.load(json_file)
+            return Characters(**data)
+    except Exception as e:
+        return Characters()
+    return Characters()
 
 def findFirstDir(dir):
     items = os.listdir(dir)
@@ -201,10 +232,10 @@ def parse_brackets_keep_all(text):
     
     return dict(params)
 
-@app.get("/get-chat")
-async def getChat():    
+@app.post("/get-chat", response_model=ResponseData[str])
+async def getChat(request: Character):    
     try:
-        chat = loadChat()
+        chat = loadChat(request.name)
         chatText = "\n\n".join(convertChatDialogueTranslated(chat.messages))
 
         return ResponseData[str](
@@ -213,41 +244,13 @@ async def getChat():
             data=chatText
         )
     except Exception as e:
-        return ResponseData[GenerateResponse](
+        return ResponseData[str](
             status="error",
             message = f"Load chat failed: {str(e)}"
         )
     
-@app.post("/delete-chat", response_model=ResponseData[GenerateResponse])
-async def deleteChat(request: DeleteRequest):
-    """Generate text using the loaded model"""
-    global generator
-    
-    if generator is None:
-        return ResponseData[GenerateResponse](
-            status="error",
-            message = "No model loaded. Please load a model first using /model/load"
-        )
-    
-    try:
-        chat = loadChat()
-
-        chat.messages.pop(request.index)
-
-        saveChat(chat)
-
-        return ResponseData[GenerateResponse](
-            status="success",
-            message = ""
-        )
-    except Exception as e:
-        return ResponseData[GenerateResponse](
-            status="error",
-            message = f"Delete failed: {str(e)}"
-        )
-
 @app.delete("/delete-last-chat", response_model=ResponseData[str])
-async def deleteLastChat():
+async def deleteLastChat(request: Character):
     """Generate text using the loaded model"""
     global generator
     
@@ -258,7 +261,7 @@ async def deleteLastChat():
         )
     
     try:
-        chat = loadChat()
+        chat = loadChat(request.name)
 
         if chat.messages:
             chat.messages.pop()
@@ -271,7 +274,7 @@ async def deleteLastChat():
 
         chatText = "\n\n".join(convertChatDialogueTranslated(chat.messages))
 
-        saveChat(chat)
+        saveChat(chat, request.name)
 
         return ResponseData[str](
             status="success",
@@ -296,12 +299,109 @@ def convertChatDialogueTranslated(chatTemplates: list[ChatTemplate]):
         chat.append(f"{chatTemplate.name}: {chatTemplate.chatTranslated}")
     return chat
 
-def replaceContextPrompt(characterTemplate, character, chatText):
+def replaceContextPrompt(characterTemplate, character: Character, chatText):
     newPrompt = characterTemplate["CONTEXT"]
     newPrompt = newPrompt.replace(r"{USER_DIALOGUE}", chatText)
-    newPrompt = newPrompt.replace(r"{SYSTEM_NAME}", character["NAME"])
-    newPrompt = newPrompt.replace(r"{DESCRIPTION}", character["DESCRIPTION"])
+    newPrompt = newPrompt.replace(r"{SYSTEM_NAME}", character.name)
+    newPrompt = newPrompt.replace(r"{DESCRIPTION}", character.description)
     return newPrompt
+
+def getCharacter(characterName) -> Character:    
+    try:
+        characters = loadCharacters()
+
+        char = Character()
+        
+        for character in characters.characters:
+            if character.name == characterName:
+                char.name = character.name
+                char.description = character.description
+                char.rvc_model = character.rvc_model
+                char.vrm_path = character.vrm_path
+        
+        return char
+    except Exception as e:
+        return Character()
+    
+@app.get("/get-character")
+async def getCharacters():    
+    try:
+        characters = loadCharacters()
+
+        return ResponseData[Characters](
+            status="success",
+            message = "",
+            data=characters
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Load character failed: {str(e)}"
+        )
+    
+@app.post("/add-character", response_model=ResponseData[GenerateResponse])
+async def addCharacter(request: Character):
+    try:
+        characters = loadCharacters()
+        
+        isUpdate = False
+
+        for character in characters.characters:
+            if character.name == request.name:
+                character.description = request.description
+                character.rvc_model = request.rvc_model
+                character.vrm_path = request.vrm_path
+                isUpdate = True
+                break
+
+        if not isUpdate:
+            characters.characters.append(request)
+
+        saveCharacter(characters)
+
+        return ResponseData[GenerateResponse](
+            status="success",
+            message = ""
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Add character failed: {str(e)}"
+        )
+
+@app.delete("/delete-character", response_model=ResponseData[GenerateResponse])
+async def deleteCharacter(request: Character):
+    try:
+        characters = loadCharacters()
+        
+        if request.name == "Hatsune Miku":
+            return ResponseData[GenerateResponse](
+                status="error",
+                message = f"Cannot delete default character"
+            )
+        
+        i = 0
+        for character in characters.characters:
+            if character.name == request.name:
+                break
+            i += 1
+        
+        if i < len(characters.characters):
+            characters.characters.pop(i)
+
+        saveCharacter(characters)
+
+        deleteChatFile(request.name)
+
+        return ResponseData[GenerateResponse](
+            status="success",
+            message = ""
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Delete character failed: {str(e)}"
+        )
 
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):
@@ -318,8 +418,8 @@ async def generate_text(request: GenerateRequest):
     settings = ExLlamaV2Sampler.Settings()
     
     characterTemplate = loadCharacterTemplate()
-    character = loadCharacter()
-    chat = loadChat()
+    character = getCharacter(request.character_name)
+    chat = loadChat(request.character_name)
     
     translatedPrompt = request.prompt
     if request.language != "en":
@@ -342,7 +442,7 @@ async def generate_text(request: GenerateRequest):
     promptTokens = tokenizer.encode(newPrompt).shape[-1]
     print(promptTokens)
 
-    # check if the prompt token is larger than sequence length, if it's larger, then the old dialogue will be removed the model can produce output         
+    # check if the prompt token is larger than sequence length, if it's larger, then the old dialogue will be removed so the model can produce output         
     while promptTokens + request.max_new_tokens > sequenceLength:
         if len(chat.messages) > 0:
             chat.messages.pop(0)
@@ -431,7 +531,7 @@ async def generate_text(request: GenerateRequest):
     outputToken = tokenizer.encode(newOutput).shape[-1]
 
     chatTemplateOutput = ChatTemplate(
-        name=character['NAME'],
+        name=character.name,
         chat=newCleanedOutput,
         chatTranslated=translatedResponse,
         actionParams=actionParams
@@ -439,10 +539,10 @@ async def generate_text(request: GenerateRequest):
 
     chat.messages.append(chatTemplateOutput)
 
-    saveChat(chat)
+    saveChat(chat, request.character_name)
     
     generateResponse = GenerateResponse( 
-        character_name=character["NAME"],
+        character_name=character.name,
         generated_text=translatedResponse,
         prompt_token=promptTokens,
         output_token=outputToken,
