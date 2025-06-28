@@ -30,6 +30,13 @@ from exllamav2.generator import (
 
 app = FastAPI(title="ExLlamaV2 API", description="REST API for ExLlamaV2 text generation")
 
+DEFAULT_CHARACTER = {
+            "name": "Hatsune Miku",
+            "description": "You are hatsune miku, Miku should respond with appropriate emotions, actions, and helpful information in her characteristic cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
+            "rvc_model": "miku_default_rvc",
+            "vrm_path": ""
+        }
+
 # Global variables to store the model components
 model = None
 config = None
@@ -37,6 +44,7 @@ cache = None
 tokenizer = None
 generator = None
 sequenceLength = None
+
 
 class ModelLoadRequest(BaseModel):
     path: str
@@ -169,6 +177,18 @@ def findFirstDir(dir):
             ext = item[index:]
         if ext == "":
             return item
+
+def findDir(dir):
+    items = os.listdir(dir)
+    itemFiltered = []
+    for item in items:
+        index = item.find(".")
+        ext = ""
+        if index >= 0:
+            ext = item[index:]
+        if ext == "":
+            itemFiltered.append(item)
+    return itemFiltered
 
 def load_model():
     """Load an ExLlamaV2 model"""
@@ -337,6 +357,47 @@ async def getCharacters():
         return ResponseData[GenerateResponse](
             status="error",
             message = f"Load character failed: {str(e)}"
+        )
+
+@app.get("/get-rvc")
+async def getRvc():    
+    try:
+        rvc_dir = script.rvc.refresh_model_list()
+
+        return ResponseData[list[str]](
+            status="success",
+            message = "",
+            data=rvc_dir
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Load character failed: {str(e)}"
+        )
+
+@app.post("/default-character", response_model=ResponseData[GenerateResponse])
+async def defaultCharacter():
+    try:
+        characters = loadCharacters()
+        
+        for character in characters.characters:
+            if character.name == "Hatsune Miku":
+                character.description = DEFAULT_CHARACTER["description"]
+                character.rvc_model = DEFAULT_CHARACTER["rvc_model"]
+                character.vrm_path = DEFAULT_CHARACTER["vrm_path"]
+                break
+
+        saveCharacter(characters)
+
+        return ResponseData[Characters](
+            status="success",
+            message = "",
+            data=characters
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Add character failed: {str(e)}"
         )
     
 @app.post("/add-character", response_model=ResponseData[GenerateResponse])
@@ -507,7 +568,7 @@ async def generate_text(request: GenerateRequest):
             audio = AudioSegment.from_mp3(OUTPUT_FILE)
             audio.export(OUTPUT_FILE_WAV, format="wav")
             audio_data = script.rvc.load_audio(OUTPUT_FILE_WAV, 16000)
-            script.rvc_click(audio_data, OUTPUT_FILE_WAV)
+            script.rvc_click(audio_data, OUTPUT_FILE_WAV, character.rvc_model)
     
     # if request.language == "id":
     #     script.params['rvc_language'] = "indonesia"
@@ -522,7 +583,7 @@ async def generate_text(request: GenerateRequest):
     # emotivoice tts for english language
     base64_audio = ""
     if request.language == "en":
-        base64_audio = script.output_modifier(actionParams.emotions[0] if actionParams.emotions else "", tts_output)
+        base64_audio = script.output_modifier(actionParams.emotions[0] if actionParams.emotions else "", tts_output, character.rvc_model)
     else:
         with open(OUTPUT_FILE_WAV, 'rb') as wav_file:
             wav_data = wav_file.read()

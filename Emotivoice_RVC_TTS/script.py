@@ -442,10 +442,14 @@ def history_modifier(history):
 
 rvcModels = rvc.refresh_model_list()
 
-def rvc_click(gen, output_file):
+def rvc_click(gen, output_file, rvc_model):
+    print("rvc modelnya ",rvc_model)
+    if rvc_model != "" and rvc.model_file != rvc_model:
+        print("update rvc")
+        onChangeRvcModel(rvc_model)
     rvc.on_button_click(gen,params['rvc_model_index'],str(output_file),params['rvc_pitch'],params['rvc_crepe_hop'],params['rvc_method_entry'],params['rvc_retrieval_rate'])
     
-def output_modifier(emotionPrompt: str = "",string: str = ""):
+def output_modifier(emotionPrompt: str = "",string: str = "",rvc_model: str = ""):
     """
     This function is applied to the model outputs.
     """
@@ -521,7 +525,7 @@ def output_modifier(emotionPrompt: str = "",string: str = ""):
         # Call generate audio and save numpy output by wavio
         gen = generate_audio(emotionPrompt, texts)
         if rvc.model_loaded:
-           rvc_click(gen, output_file)
+           rvc_click(gen, output_file, rvc_model)
         else:
             if rvcModels:
                 indexPath = rvc.selected_model(rvcModels[0])
@@ -565,6 +569,8 @@ def generate_audio(emotionPrompt, texts):
 
     all_parts = []
     for j, text in enumerate(texts):
+        # voice tone
+        # "8975"
         # params['voice']
         gen = tts(emotionPrompt, text, "8975", models)
         all_parts.append(gen)

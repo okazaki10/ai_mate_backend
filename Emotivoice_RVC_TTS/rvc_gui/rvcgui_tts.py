@@ -400,7 +400,7 @@ def start_processing(gen, params, output_file):
 
 
 model_loaded = False
-
+model_file = ""
 
 def selected_model(choice):
     model_dir = os.path.join(models_dir, choice)
@@ -424,8 +424,9 @@ def selected_model(choice):
         else:
             print(f"No .index files found in {model_dir}")
         get_vc(pth_file_path, 0)
-        global model_loaded
-        model_loaded = True       
+        global model_loaded, model_file
+        model_loaded = True
+        model_file = choice       
     else:
         print(f"No eligible .pth files found in {model_dir}")
     return index_file

@@ -5,6 +5,18 @@
             "description": "You are hatsune miku, Miku should respond with appropriate emotions, actions, and helpful information in her characteristic cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
             "rvc_model": "miku_default_rvc",
             "vrm_path": ""
+        },
+        {
+            "name": "Sofia",
+            "description": "you are sofia, little princes",
+            "rvc_model": "sofia",
+            "vrm_path": "D:\\Downloads\\\u30aa\u30ea\u30b8\u30ca\u30eb3D\u30e2\u30c7\u30eb_\u751f\u99d2\u30df\u30eb__\u79c1\u670dver._\\\u00e2I\u00e2\u00e8\u00e2W\u00e2i\u00e2\u00ef3D\u00e2\u00e9\u00e2f\u00e2\u00ef\u00fcu\u00c9\u2562\u00ef\u03b5\u00e2~\u00e2\u00ef\u00fcv\u00fci\u00c4\u00e4\u00f2\u20a7ver.\u00fcj\\\u00c9\u2562\u00ef\u03b5\u00e2~\u00e2\u00ef_\u00c4\u00e4\u00f2\u20a7.vrm"
+        },
+        {
+            "name": "Sofias",
+            "description": "you are sofia, little princes",
+            "rvc_model": "sofia",
+            "vrm_path": "D:\\Downloads\\\u6b62\u4e38\u5f0f\u521d\u97f3\u30df\u30afNT_ver1.1.2\\HatsuneMikuNT.vrm"
         }
     ]
 }
