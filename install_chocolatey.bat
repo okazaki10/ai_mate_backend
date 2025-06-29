@@ -7,4 +7,4 @@ SET DIR=%~dp0%
 ::run installer
 %systemroot%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%DIR%install.ps1' %*"
 
-start install_ffmpeg_administrator
+start %DIR%\install_ffmpeg_administrator
