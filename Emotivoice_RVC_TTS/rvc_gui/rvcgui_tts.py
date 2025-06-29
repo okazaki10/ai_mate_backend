@@ -455,6 +455,7 @@ def update_config(selected):
 
 
 models_dir = os.path.join(RVC_DIR,"..","..","rvc_models") 
+os.makedirs(models_dir, exist_ok=True)
 model_folders = [f for f in os.listdir(models_dir) if os.path.isdir(os.path.join(
     models_dir, f)) and any(f.endswith(".pth") for f in os.listdir(os.path.join(models_dir, f)))]
 

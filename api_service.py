@@ -136,6 +136,8 @@ def saveCharacter(characters: Characters):
 
 def loadChat(characterName) -> ChatTemplates:
     try:
+        os.makedirs("chat_history", exist_ok=True)
+
         filepath = Path(f"chat_history/{characterName}.json")
         if not filepath.exists():
             return ChatTemplates()
@@ -188,8 +190,8 @@ def load_model():
     
     try:
         # Check if model path exists
+        os.makedirs("models", exist_ok=True)
         modelDir = os.path.join("models")
-       
         modelPath = os.path.join(modelDir,findFirstDir(modelDir))
 
         if not os.path.exists(modelPath):
