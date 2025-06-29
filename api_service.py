@@ -32,7 +32,7 @@ app = FastAPI(title="ExLlamaV2 API", description="REST API for ExLlamaV2 text ge
 
 DEFAULT_CHARACTER = {
             "name": "Hatsune Miku",
-            "description": "You are hatsune miku, Miku should respond with appropriate emotions, actions, and helpful information in her characteristic cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
+            "description": "You are hatsune miku, her characteristic is cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
             "rvc_model": "miku_default_rvc",
             "vrm_path": ""
         }
@@ -109,14 +109,6 @@ class ModelInfo(BaseModel):
 
 def loadCharacterTemplate():
     filepath = Path('character_template/alpaca_template.yaml')
-    if not filepath.exists():
-        return ""
-
-    file_contents = open(filepath, 'r', encoding='utf-8').read()
-    return yaml.safe_load(file_contents)
-
-def loadCharacter():
-    filepath = Path('character/Hatsune_Miku.yaml')
     if not filepath.exists():
         return ""
 
@@ -319,11 +311,12 @@ def convertChatDialogueTranslated(chatTemplates: list[ChatTemplate]):
         chat.append(f"{chatTemplate.name}: {chatTemplate.chatTranslated}")
     return chat
 
-def replaceContextPrompt(characterTemplate, character: Character, chatText):
+def replaceContextPrompt(characterTemplate, character: Character, chatText, userName):
     newPrompt = characterTemplate["CONTEXT"]
     newPrompt = newPrompt.replace(r"{USER_DIALOGUE}", chatText)
     newPrompt = newPrompt.replace(r"{SYSTEM_NAME}", character.name)
     newPrompt = newPrompt.replace(r"{DESCRIPTION}", character.description)
+    newPrompt = newPrompt.replace(r"{USER_NAME}", userName)
     return newPrompt
 
 def getCharacter(characterName) -> Character:    
@@ -497,7 +490,7 @@ async def generate_text(request: GenerateRequest):
 
     chat.messages.append(chatTemplate)
     chatText = "\n".join(convertChatDialogue(chat.messages))
-    newPrompt = replaceContextPrompt(characterTemplate, character, chatText)
+    newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
     print(newPrompt)
 
     promptTokens = tokenizer.encode(newPrompt).shape[-1]
@@ -508,7 +501,7 @@ async def generate_text(request: GenerateRequest):
         if len(chat.messages) > 0:
             chat.messages.pop(0)
             chatText = "\n".join(convertChatDialogue(chat.messages))
-            newPrompt = replaceContextPrompt(characterTemplate, character, chatText)
+            newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
             promptTokens = tokenizer.encode(newPrompt).shape[-1]
         else:
             break
