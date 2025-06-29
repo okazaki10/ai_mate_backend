@@ -15,6 +15,7 @@ import re
 from collections import defaultdict
 from pydub import AudioSegment
 import base64
+import nltk
 
 # ExLlamaV2 imports
 from exllamav2 import (
@@ -28,12 +29,24 @@ from exllamav2.generator import (
     ExLlamaV2Sampler
 )
 
+def download_if_not_exists(resource_name):
+    try:
+        nltk.data.find(resource_name)
+        print(f"{resource_name} already exists")
+    except LookupError:
+        print(f"Downloading {resource_name}...")
+        nltk.download(resource_name)
+
+# Usage
+download_if_not_exists('averaged_perceptron_tagger')
+download_if_not_exists('averaged_perceptron_tagger_eng')
+
 app = FastAPI(title="ExLlamaV2 API", description="REST API for ExLlamaV2 text generation")
 
 DEFAULT_CHARACTER = {
             "name": "Hatsune Miku",
             "description": "You are hatsune miku, her characteristic is cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
-            "rvc_model": "miku_default_rvc",
+            "rvc_model": "MikuDiva",
             "vrm_path": ""
         }
 
@@ -536,6 +549,7 @@ async def generate_text(request: GenerateRequest):
     translatedResponse = tts_output
 
     if request.language == "en":
+        tts_output = tts_output.lower()
         tts_output = script.tts_preprocessor.remove_emojis_with_library(tts_output)
         tts_output = script.tts_preprocessor.replace_abbreviations(tts_output)
     
