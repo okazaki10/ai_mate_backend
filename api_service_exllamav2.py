@@ -16,12 +16,18 @@ from collections import defaultdict
 from pydub import AudioSegment
 import base64
 import nltk
-import logging
-from llama_cpp import Llama
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# ExLlamaV2 imports
+from exllamav2 import (
+    ExLlamaV2,
+    ExLlamaV2Config,
+    ExLlamaV2Cache,
+    ExLlamaV2Tokenizer,
+)
+from exllamav2.generator import (
+    ExLlamaV2StreamingGenerator,
+    ExLlamaV2Sampler
+)
 
 def download_if_not_exists(resource_name):
     try:
@@ -179,13 +185,6 @@ def findFirstDir(dir):
         if ext == "":
             return item
 
-def findFirstGGUF(dir):
-    items = os.listdir(dir)
-    for item in items:
-        index = item.find(".gguf")
-        if index >= 0:
-            return item
-
 def findDir(dir):
     items = os.listdir(dir)
     itemFiltered = []
@@ -198,6 +197,48 @@ def findDir(dir):
             itemFiltered.append(item)
     return itemFiltered
 
+def load_model():
+    """Load an ExLlamaV2 model"""
+    global model, config, cache, tokenizer, generator, sequenceLength
+    
+    try:
+        # Check if model path exists
+        os.makedirs("models", exist_ok=True)
+        modelDir = os.path.join("models")
+        modelPath = os.path.join(modelDir,findFirstDir(modelDir))
+
+        if not os.path.exists(modelPath):
+            raise HTTPException(status_code=400, detail=f"Model path does not exist: {modelPath}")
+        
+        # Initialize config
+        config = ExLlamaV2Config()
+        config.model_dir = modelPath
+        config.prepare()
+        
+        sequenceLength = 4096
+        # Set sequence length
+        config.max_seq_len = sequenceLength
+        
+        # Initialize model
+        model = ExLlamaV2(config)
+        print("Loading model...")
+        model.load()
+        
+        # Initialize tokenizer
+        tokenizer = ExLlamaV2Tokenizer(config)
+        
+        # Initialize cache
+        cache = ExLlamaV2Cache(model, max_seq_len=sequenceLength)
+        
+        # Initialize generator
+        generator = ExLlamaV2StreamingGenerator(model, cache, tokenizer)
+        
+        print(f"Model loaded successfully {modelPath} {sequenceLength}")
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")
+
+load_model()
 script.setup()
 
 if script.rvcModels:
@@ -431,51 +472,20 @@ async def deleteCharacter(request: Character):
             message = f"Delete character failed: {str(e)}"
         )
 
-# Global variable to store the model
-llm_model = None
-
-def load_llama_cpp_model():
-    """Load the LLM model on startup"""
-    global llm_model, sequenceLength
-
-    sequenceLength = 4096
-
-    # Check if model path exists
-    os.makedirs("models", exist_ok=True)
-    modelDir = os.path.join("models")
-    modelPath = os.path.join(modelDir,findFirstGGUF(modelDir))
-
-    if not os.path.exists(modelPath):
-        raise HTTPException(status_code=400, detail=f"Model path does not exist: {modelPath}")
-
-    # # Replace with your model path
-    # model_path = "models/silicon-maid-7b.Q4_K_M.gguf"  # Update this path
-
-    try:
-        logger.info(f"Loading model from {modelPath}")
-        llm_model = Llama(
-            model_path=modelPath,
-            n_ctx=sequenceLength,  # Context length
-            n_gpu_layers=-1,  # Use all GPU layers (-1 = all layers)
-            # n_gpu_layers=32,  # Or specify number of layers to offload
-            # n_threads=1,  # Reduced CPU threads when using GPU
-            # n_batch=512,  # Batch size for prompt processing
-            # verbose=False,
-            # # CUDA-specific settings
-            # use_mmap=True,  # Memory mapping for faster loading
-            # use_mlock=True,  # Lock memory to prevent swapping
-            rope_freq_base=0,
-            rope_freq_scale=0
-        )
-        logger.info("Model loaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to load model: {e}")
-        # You might want to set llm_model to None and handle this in endpoints
-
-load_llama_cpp_model()
-
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
-async def generate_text(request: GenerateRequest):    
+async def generate_text(request: GenerateRequest):
+    """Generate text using the loaded model"""
+    global generator
+    
+    if generator is None:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = "No model loaded. Please load a model first using /model/load"
+        )
+
+    # Configure sampling settings
+    settings = ExLlamaV2Sampler.Settings()
+    
     characterTemplate = loadCharacterTemplate()
     character = getCharacter(request.character_name)
     chat = loadChat(request.character_name)
@@ -498,7 +508,7 @@ async def generate_text(request: GenerateRequest):
     newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
     print(newPrompt)
 
-    promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
+    promptTokens = tokenizer.encode(newPrompt).shape[-1]
     print(promptTokens)
 
     # check if the prompt token is larger than sequence length, if it's larger, then the old dialogue will be removed so the model can produce output         
@@ -507,20 +517,19 @@ async def generate_text(request: GenerateRequest):
             chat.messages.pop(0)
             chatText = "\n".join(convertChatDialogue(chat.messages))
             newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
-            promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
+            promptTokens = tokenizer.encode(newPrompt).shape[-1]
         else:
             break
 
-    output = llm_model(
+    # Generate text
+    output = generator.generate_simple(
         newPrompt,
-        max_tokens=request.max_new_tokens,
-        stop=["</s>"],
-        echo=False  # Don't include the prompt in the response
+        settings,
+        request.max_new_tokens,
+        seed=None
     )
 
-    print(f"responsenya {output}")
-
-    newOutput = output['choices'][0]['text']
+    newOutput = output[len(newPrompt):].strip()
 
     if newOutput == "":
         return ResponseData[GenerateResponse](
@@ -589,7 +598,7 @@ async def generate_text(request: GenerateRequest):
             wav_data = wav_file.read()
             base64_audio = base64.b64encode(wav_data).decode('utf-8')
 
-    outputToken = len(llm_model.tokenize(newOutput.encode('utf-8')))
+    outputToken = tokenizer.encode(newOutput).shape[-1]
 
     chatTemplateOutput = ChatTemplate(
         name=character.name,

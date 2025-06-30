@@ -16,16 +16,16 @@ CONTEXT: |-
   [EMOTION:SHY] - Compliments received, intimate conversations
   [EMOTION:ANGRY] - Getting pissed off, angry, saying bad words
   [EMOTION:SAD] - {SYSTEM_NAME} feeling sad
-  [EMOTION:SUPRISE] - SADomething unexpected, suprised
+  [EMOTION:SUPRISE] - Something unexpected, suprised
 
   ## List of Action Categories and Triggers
   [ACTION:SCHEDULE] - Calendar management, reminders
-  [ACTION:WAVE] - Greetings, saying hello
+  [ACTION:WAVE] - Greetings, {USER_NAME} saying hello
 
   ## Example Response Format: 
   # Greetings
   {USER_NAME}: hello
-  {SYSTEM_NAME}: [EMOTION:HAPPY] [ACTION:WAVE] hi {USER_NAME}! how can i help you today?
+  {SYSTEM_NAME}: [EMOTION:HAPPY] [ACTION:WAVE] Hi {USER_NAME}! how can i help you today?
 
   ## Chat Dialogue
 
