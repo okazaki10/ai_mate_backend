@@ -48,8 +48,6 @@ DEFAULT_CHARACTER = {
 model = None
 config = None
 cache = None
-tokenizer = None
-generator = None
 sequenceLength = None
 
 
@@ -237,15 +235,6 @@ async def getChat(request: Character):
     
 @app.delete("/delete-last-chat", response_model=ResponseData[str])
 async def deleteLastChat(request: Character):
-    """Generate text using the loaded model"""
-    global generator
-    
-    if generator is None:
-        return ResponseData[str](
-            status="error",
-            message = "No model loaded. Please load a model first using /model/load"
-        )
-    
     try:
         chat = loadChat(request.name)
 
@@ -616,38 +605,6 @@ async def generate_text(request: GenerateRequest):
         data = generateResponse,
         message = ""
     )
-
-@app.post("/model/unload")
-async def unload_model():
-    """Unload the current model to free memory"""
-    global model, config, cache, tokenizer, generator
-    
-    try:
-        # Clean up model components
-        if generator:
-            del generator
-            generator = None
-        if cache:
-            del cache
-            cache = None
-        if tokenizer:
-            del tokenizer
-            tokenizer = None
-        if model:
-            del model
-            model = None
-        if config:
-            del config
-            config = None
-            
-        # Force garbage collection
-        import gc
-        gc.collect()
-        
-        return {"message": "Model unloaded successfully"}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to unload model: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(
