@@ -14,3 +14,5 @@ installer_files/
 chat_history/
 models/
 rvc_models/
+rvc_output/
+music_separated/

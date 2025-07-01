@@ -211,6 +211,8 @@ if __name__ == "__main__":
 
     run_cmd(f"conda install -y ninja git && python -m pip install torch==2.7.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 && python -m pip install py-cpuinfo==9.0.0 && set CMAKE_ARGS=\"-DGGML_CUDA=on\" && pip install llama-cpp-python", assert_success=True, environment=True)
     run_cmd("python -m pip install -r requirements.txt --upgrade", assert_success=True, environment=True)
+    run_cmd("python -m pip uninstall -y onnxruntime onnxruntime-gpu", assert_success=True, environment=True)
+    run_cmd("python -m pip install onnxruntime-gpu", assert_success=True, environment=True)
 
     print("Installing fairseq")
     command = f'{python_path} -m pip install git+https://github.com/okazaki10/fairseq.git@main'

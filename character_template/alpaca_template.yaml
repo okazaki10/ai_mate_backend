@@ -21,11 +21,18 @@ CONTEXT: |-
   ## List of Action Categories and Triggers
   [ACTION:SCHEDULE] - Calendar management, reminders
   [ACTION:WAVE] - Greetings, {USER_NAME} saying hello
+  [ACTION:SING("URL")] - {USER_NAME} want to do music search from youtube for {SYSTEM_NAME} to sing
 
   ## Example Response Format: 
   # Greetings
   {USER_NAME}: hello
   {SYSTEM_NAME}: [EMOTION:HAPPY] [ACTION:WAVE] Hi {USER_NAME}! how can i help you today?
+
+  # Singing
+  {USER_NAME}: can you sing?
+  {SYSTEM_NAME}: [EMOTION:HAPPY] Of course i can sing! just put the youtube link here and then i will sing the song!
+  {USER_NAME}: then can you sing from this youtube url https://youtu.be/EXAMPLE?si=EXAMPLE ?
+  {SYSTEM_NAME}: [EMOTION:HAPPY] Of course! let me sing the song for you! just wait [ACTION:SING("https://youtu.be/EXAMPLE?si=EXAMPLE")] 
 
   ## Chat Dialogue
 
