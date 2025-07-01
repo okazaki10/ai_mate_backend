@@ -1,2 +1,2 @@
-installer_files\env\python.exe whisperx_fastapi.py
+installer_files\env\python whisperx_fastapi.py
 pause

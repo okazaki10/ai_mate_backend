@@ -18,6 +18,7 @@ import base64
 import nltk
 import logging
 from llama_cpp import Llama
+import youtube_downloader
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -68,6 +69,10 @@ class GenerateRequest(BaseModel):
     token_repetition_penalty: Optional[float] = 1.1
     stop_strings: Optional[list] = None
 
+class RequestSong(BaseModel):
+    character_name: str = ""
+    url: str = ""
+
 class Character(BaseModel):
     name: str = ""
     description: str = ""
@@ -99,6 +104,11 @@ class GenerateResponse(BaseModel):
     output_token: int = 0
     base64_audio: str = ""
     action_params: ActionParams = ActionParams()
+
+class ResponseSong(BaseModel):
+    title: str = ""
+    base64_audio_vocal: str = ""
+    base64_audio_instrument: str = ""
 
 T = TypeVar("T")
 
@@ -462,6 +472,37 @@ def load_llama_cpp_model():
         # You might want to set llm_model to None and handle this in endpoints
 
 load_llama_cpp_model()
+
+@app.post("/generate-song", response_model=ResponseData[ResponseSong])
+async def generate_text(request: RequestSong):    
+    character = getCharacter(request.character_name)
+    
+    vocal, instrumental, outputPathFull, title = youtube_downloader.startVoiceChange(request.url, character.rvc_model)
+    
+    base64_audio_vocal = ""
+    base64_audio_instrument = ""
+
+    with open(vocal, 'rb') as wav_file:
+        wav_data = wav_file.read()
+        base64_audio_vocal = base64.b64encode(wav_data).decode('utf-8')
+    
+    with open(instrumental, 'rb') as wav_file:
+        wav_data = wav_file.read()
+        base64_audio_instrument = base64.b64encode(wav_data).decode('utf-8')
+    
+    responseSong = ResponseSong( 
+        title=title,
+        character_name=character.name,
+        base64_audio_vocal=base64_audio_vocal,
+        base64_audio_instrument=base64_audio_instrument
+    )
+
+    return ResponseData[ResponseSong](
+        status="success",
+        data = responseSong,
+        message = ""
+    )
+
 
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):    

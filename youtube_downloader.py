@@ -332,16 +332,16 @@ def startVoiceChange(video_url, rvcModel):
     script.rvc_click(audio_data, vocal, rvcModel)
 
     # Load files
-    vocal = AudioSegment.from_wav(vocal)
-    instrumental = AudioSegment.from_wav(instrument)
+    vocalWav = AudioSegment.from_wav(vocal)
+    instrumentalWav = AudioSegment.from_wav(instrument)
 
     # Optional: match lengths (trim or loop)
-    min_length = min(len(vocal), len(instrumental))
-    vocal = vocal[:min_length]
-    instrumental = instrumental[:min_length]
+    min_length = min(len(vocalWav), len(instrumentalWav))
+    vocalWav = vocalWav[:min_length]
+    instrumentalWav = instrumentalWav[:min_length]
 
     # Mix them together (overlay)
-    mixed = instrumental.overlay(vocal)
+    mixed = instrumentalWav.overlay(vocalWav)
 
     outputPath = "rvc_output"
     Path(outputPath).mkdir(exist_ok=True)
@@ -350,7 +350,7 @@ def startVoiceChange(video_url, rvcModel):
     # Export to a new file
     mixed.export(outputPathFull, format="wav")
 
-    return vocal, instrumental, outputPathFull
+    return vocal, instrument, outputPathFull, title
 
 # Example usage
 if __name__ == "__main__":
@@ -358,9 +358,7 @@ if __name__ == "__main__":
         print("input youtube url")
         video_url = input("youtube url: ")
 
-        vocal, instrumental, outputPathFull = startVoiceChange(video_url, "MikuDiva")
-
-        print(f"vocal {vocal} insturmental {instrumental} output path {outputPathFull}")
+        startVoiceChange(video_url, "MikuDiva")
             
         # For playlist (uncomment to use):
         # playlist_url = "https://www.youtube.com/playlist?list=PLAYLIST_ID"
