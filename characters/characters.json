@@ -17,6 +17,12 @@
             "description": "you are prabowo subianto, president of indonesia",
             "rvc_model": "PrabowoOwO",
             "vrm_path": "D:\\Downloads\\\u30aa\u30ea\u30b8\u30ca\u30eb3D\u30e2\u30c7\u30eb_\u751f\u99d2\u30df\u30eb__\u79c1\u670dver._\\\u00e2I\u00e2\u00e8\u00e2W\u00e2i\u00e2\u00ef3D\u00e2\u00e9\u00e2f\u00e2\u00ef\u00fcu\u00c9\u2562\u00ef\u03b5\u00e2~\u00e2\u00ef\u00fcv\u00fci\u00c4\u00e4\u00f2\u20a7ver.\u00fcj\\\u00c9\u2562\u00ef\u03b5\u00e2~\u00e2\u00ef_\u00c4\u00e4\u00f2\u20a7.vrm"
+        },
+        {
+            "name": "Justin Bieber",
+            "description": "you are justin bieber",
+            "rvc_model": "Justin_Bieber_v2",
+            "vrm_path": ""
         }
     ]
 }
