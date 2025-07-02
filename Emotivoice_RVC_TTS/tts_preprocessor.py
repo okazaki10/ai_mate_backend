@@ -58,7 +58,7 @@ def preprocess_all(string):
 
 def replace_invalid_chars(string):
     string = remove_surrounded_chars(string)
-    string = string.replace('"', '')
+    # string = string.replace('"', '')
     string = string.replace('`', '')
     # string = string.replace("'","")
     string = string.replace('\u201D', '').replace('\u201C', '')  # right and left quote
@@ -142,7 +142,7 @@ def remove_surrounded_chars(string):
     string = re.sub(r'\*[^*]*?(\*|$)', '', string)
     
     # Remove parentheses-surrounded text
-    string = re.sub(r'\([^)]*\)', '', string)
+    # string = re.sub(r'\([^)]*\)', '', string)
     
     return string
 

@@ -10,7 +10,6 @@ import yaml
 import json
 import edge_tts
 from edge_tts import VoicesManager
-from googletrans import Translator
 import re
 from collections import defaultdict
 from pydub import AudioSegment
@@ -19,6 +18,7 @@ import nltk
 import logging
 from llama_cpp import Llama
 import youtube_downloader
+from url_safe_translator import URLSafeTranslator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -512,10 +512,10 @@ async def generate_text(request: GenerateRequest):
     
     translatedPrompt = request.prompt
     if request.language != "en":
-        translator = Translator()
+        translator = URLSafeTranslator()
         promptTranslated = await translator.translate(request.prompt, dest="en", src=request.language)
         print(f"test : {promptTranslated}")
-        translatedPrompt = promptTranslated.text
+        translatedPrompt = promptTranslated["text"]
 
     chatTemplate = ChatTemplate(
         name=request.name,
@@ -576,8 +576,8 @@ async def generate_text(request: GenerateRequest):
     
     if request.language != "en":
         outputTranslated = await translator.translate(tts_output, dest=request.language, src="en")
-        translatedResponse = outputTranslated.text
-        tts_output = script.tts_preprocessor.remove_emojis_with_library(outputTranslated.text)
+        translatedResponse = outputTranslated["text"]
+        tts_output = script.tts_preprocessor.remove_emojis_with_library(outputTranslated["text"])
 
     newCleanedOutput = script.tts_preprocessor.remove_emojis_with_library(newCleanedOutput)        
     
