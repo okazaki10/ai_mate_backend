@@ -3,7 +3,7 @@
         {
             "name": "Hatsune Miku",
             "description": "You are hatsune miku, her characteristic is cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
-            "rvc_model": "MikuDiva",
+            "rvc_model": "infamous_miku_v2",
             "vrm_path": ""
         },
         {

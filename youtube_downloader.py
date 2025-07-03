@@ -193,7 +193,7 @@ def separate_vocals_instruments(audio_file, output_path, model_name="UVR_MDXNET_
     try:
         # Initialize separator
         separator = Separator(
-            model_file_dir='./models',  # Directory to store models
+            model_file_dir='./uvr_models',  # Directory to store models
             output_dir=output_path
         )
         

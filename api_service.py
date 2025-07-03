@@ -19,6 +19,7 @@ import logging
 from llama_cpp import Llama
 import youtube_downloader
 from url_safe_translator import URLSafeTranslator
+import librosa
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +42,7 @@ app = FastAPI(title="ExLlamaV2 API", description="REST API for ExLlamaV2 text ge
 DEFAULT_CHARACTER = {
             "name": "Hatsune Miku",
             "description": "You are hatsune miku, her characteristic is cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
-            "rvc_model": "MikuDiva",
+            "rvc_model": "infamous_miku_v2",
             "vrm_path": ""
         }
 
@@ -107,6 +108,7 @@ class GenerateResponse(BaseModel):
 
 class ResponseSong(BaseModel):
     title: str = ""
+    bpm: float = ""
     base64_audio_vocal: str = ""
     base64_audio_instrument: str = ""
 
@@ -490,8 +492,15 @@ async def generate_text(request: RequestSong):
         wav_data = wav_file.read()
         base64_audio_instrument = base64.b64encode(wav_data).decode('utf-8')
     
+    # Load audio file
+    y, sr = librosa.load(outputPathFull)
+
+    # Estimate tempo (BPM)
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    
     responseSong = ResponseSong( 
         title=title,
+        bpm=tempo,
         character_name=character.name,
         base64_audio_vocal=base64_audio_vocal,
         base64_audio_instrument=base64_audio_instrument
@@ -544,7 +553,7 @@ async def generate_text(request: GenerateRequest):
     output = llm_model(
         newPrompt,
         max_tokens=request.max_new_tokens,
-        stop=["</s>"],
+        stop=["</s>",f"{request.name}:"],
         echo=False  # Don't include the prompt in the response
     )
 
