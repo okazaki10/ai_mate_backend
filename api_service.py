@@ -466,7 +466,8 @@ def load_llama_cpp_model():
             # use_mmap=True,  # Memory mapping for faster loading
             # use_mlock=True,  # Lock memory to prevent swapping
             rope_freq_base=0,
-            rope_freq_scale=0
+            rope_freq_scale=0,
+            flash_attn=True
         )
         logger.info("Model loaded successfully")
     except Exception as e:
@@ -553,7 +554,7 @@ async def generate_text(request: GenerateRequest):
     output = llm_model(
         newPrompt,
         max_tokens=request.max_new_tokens,
-        stop=["</s>",f"{request.name}:"],
+        stop=["</s>",f"{request.name}:","#"],
         echo=False  # Don't include the prompt in the response
     )
 

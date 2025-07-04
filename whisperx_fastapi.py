@@ -5,6 +5,9 @@ import io
 import numpy as np
 from pydub import AudioSegment
 from typing import Annotated
+import torch
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
 app = FastAPI(title="WhisperX Speech Recognition API")
 
@@ -31,7 +34,7 @@ def load_models():
     try:
         #tiny.en, tiny, base.en, base, small.en, small, medium.en, medium, large-v1, large-v2, large-v3, large, distil-large-v2, distil-medium.en, distil-small.en, distil-large-v3, large-v3-turbo, turbo
         # Load WhisperX model
-        whisper_model = whisperx.load_model("large-v3-turbo", device, compute_type=compute_type)
+        whisper_model = whisperx.load_model("base", device, compute_type=compute_type)
         
         # Load alignment model
         # align_model, metadata = whisperx.load_align_model(device=device)

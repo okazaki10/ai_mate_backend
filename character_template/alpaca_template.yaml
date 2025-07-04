@@ -6,7 +6,6 @@ CONTEXT: |-
 
   ## Description
   {DESCRIPTION}
-  Make sure that {SYSTEM_NAME} doesn't produce {USER_NAME}: in response
   {SYSTEM_NAME} should respond with appropriate emotions and actions, action is optional
 
   ## List of Emotion Categories and Triggers
