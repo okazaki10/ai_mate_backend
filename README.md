@@ -19,7 +19,7 @@ just open start_ai_mate.bat
 ## SINGING
 - say "can you sing?"
 - and then say "this is the link https://youtu.be/EXAMPLE?si=EXAMPLE"
-put the youtube link from share button
+- basically put the youtube link from share button
   
 # ADDING NEW CHARACTER
 - from menu, click "character customization" button
