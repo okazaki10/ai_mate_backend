@@ -34,7 +34,7 @@ def load_models():
     try:
         #tiny.en, tiny, base.en, base, small.en, small, medium.en, medium, large-v1, large-v2, large-v3, large, distil-large-v2, distil-medium.en, distil-small.en, distil-large-v3, large-v3-turbo, turbo
         # Load WhisperX model
-        whisper_model = whisperx.load_model("base", device, compute_type=compute_type)
+        whisper_model = whisperx.load_model("base", device)
         
         # Load alignment model
         # align_model, metadata = whisperx.load_align_model(device=device)
@@ -95,7 +95,7 @@ async def recognize_speech(language: Annotated[str, Form()], audio_file: UploadF
         
         print(f"language {language}")
         # Transcribe using WhisperX
-        result = whisper_model.transcribe(samples, batch_size=16, language=language)
+        result = whisper_model.transcribe(samples, language=language)
         
         # Extract text from segments
         text = ""

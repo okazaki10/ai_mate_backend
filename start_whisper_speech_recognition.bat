@@ -1,0 +1,2 @@
+installer_files\env\python whisper_speech_recognition.py
+pause

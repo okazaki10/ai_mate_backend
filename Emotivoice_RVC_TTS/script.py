@@ -1,12 +1,10 @@
 # Credit to Diffusion_TSS for script.py, modifications are made to adapt to EMotivoice
 
-import gc
 import os
 import sys
 import traceback
 
 import torch
-import torchaudio
 
 from pathlib import Path
 import time

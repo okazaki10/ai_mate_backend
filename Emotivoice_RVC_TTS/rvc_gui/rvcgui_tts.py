@@ -1,6 +1,5 @@
 import random
 import string
-from tkinter import filedialog
 import soundfile as sf
 
 import os
@@ -24,7 +23,6 @@ from .my_utils import load_audio
 from .infer_pack_tts.models import SynthesizerTrnMs256NSFsid, SynthesizerTrnMs256NSFsid_nono
 from .infer_pack_tts.modelsv2 import SynthesizerTrnMs768NSFsid_nono, SynthesizerTrnMs768NSFsid
 from multiprocessing import cpu_count
-import threading
 from time import sleep
 from time import sleep
 import traceback
@@ -312,16 +310,6 @@ def refresh_model_list():
     model_folders = [f for f in os.listdir(models_dir) if os.path.isdir(os.path.join(
     models_dir, f)) and any(f.endswith(".pth") for f in os.listdir(os.path.join(models_dir, f)))]
     return model_folders
-
-def browse_zip():
-    global zip_file
-    zip_file = filedialog.askopenfilename(
-        initialdir=os.getcwd(),
-        title="Select file",
-        filetypes=(("zip files", "*.zip"), ("all files", "*.*")),
-    )
-    extract_model_from_zip(zip_file, models_dir)
-    refresh_model_list()
     
 def get_output_path(file_path):
     
@@ -384,14 +372,6 @@ def on_button_click(audio,file_index,outputFile,pitch=0,crepeHopLength=128,metho
     else:
         message = "Please select a model and input audio file"
         print(message)
-
-
-
-def browse_file():
-    filepath = filedialog.askopenfilename (
-        filetypes=[("Audio Files", "*.wav;*.mp3")])
-    filepath = os.path.normpath(filepath)  # Normalize file path
-
 
 def start_processing(gen, params, output_file):
     on_button_click(gen,params,str(output_file))

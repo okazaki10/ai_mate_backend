@@ -3,7 +3,6 @@ from pydantic import BaseModel
 from typing import Optional
 from pathlib import Path
 from typing import Generic, TypeVar
-from Emotivoice_RVC_TTS import script
 import uvicorn
 import os
 import yaml
@@ -14,44 +13,47 @@ import re
 from collections import defaultdict
 from pydub import AudioSegment
 import base64
-import nltk
 import logging
 from llama_cpp import Llama
-import youtube_downloader
 from url_safe_translator import URLSafeTranslator
 import librosa
+import argparse
+import subprocess
+import sys
+# Save original argv
+original_argv = sys.argv[:]
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Remove problematic arguments before importing
+filtered_argv = []
+for arg in sys.argv:
+    if not arg.startswith('--isLoadWhisper'):
+        filtered_argv.append(arg)
 
-def download_if_not_exists(resource_name):
-    try:
-        nltk.data.find(resource_name)
-        print(f"{resource_name} already exists")
-    except LookupError:
-        print(f"Downloading {resource_name}...")
-        nltk.download(resource_name)
+sys.argv = filtered_argv
 
-# Usage
-download_if_not_exists('averaged_perceptron_tagger')
-download_if_not_exists('averaged_perceptron_tagger_eng')
+from Emotivoice_RVC_TTS import script
+import nltk
+import youtube_downloader
+
+sys.argv = original_argv
 
 app = FastAPI(title="ExLlamaV2 API", description="REST API for ExLlamaV2 text generation")
 
 DEFAULT_CHARACTER = {
-            "name": "Hatsune Miku",
-            "description": "You are hatsune miku, her characteristic is cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
-            "rvc_model": "infamous_miku_v2",
-            "vrm_path": ""
-        }
+    "name": "Hatsune Miku",
+    "description": "You are hatsune miku, her characteristic is cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
+    "rvc_model": "infamous_miku_v2",
+    "vrm_path": ""
+}
 
 # Global variables to store the model components
 model = None
 config = None
 cache = None
-sequenceLength = None
-
+logger = None
+# increaste sequenceLength to increase the memory
+sequenceLength = 4096
+llm_model = None
 
 class ModelLoadRequest(BaseModel):
     path: str
@@ -123,6 +125,14 @@ class ModelInfo(BaseModel):
     loaded: bool
     path: Optional[str] = None
     max_seq_len: Optional[int] = None
+
+def download_if_not_exists(resource_name):
+    try:
+        nltk.data.find(resource_name)
+        print(f"{resource_name} already exists")
+    except LookupError:
+        print(f"Downloading {resource_name}...")
+        nltk.download(resource_name)
 
 def loadCharacterTemplate():
     filepath = Path('character_template/alpaca_template.yaml')
@@ -208,12 +218,6 @@ def findDir(dir):
             itemFiltered.append(item)
     return itemFiltered
 
-script.setup()
-
-if script.rvcModels:
-    script.onChangeRvcModel(script.rvcModels[0])
-else:
-    print("please load rvc model")
 
 def parse_brackets_keep_all(text):
     brackets = re.findall(r'\[([^\]]*)\]', text)
@@ -432,14 +436,9 @@ async def deleteCharacter(request: Character):
             message = f"Delete character failed: {str(e)}"
         )
 
-# Global variable to store the model
-llm_model = None
-
 def load_llama_cpp_model():
     """Load the LLM model on startup"""
     global llm_model, sequenceLength
-
-    sequenceLength = 4096
 
     # Check if model path exists
     os.makedirs("models", exist_ok=True)
@@ -473,8 +472,6 @@ def load_llama_cpp_model():
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
         # You might want to set llm_model to None and handle this in endpoints
-
-load_llama_cpp_model()
 
 @app.post("/generate-song", response_model=ResponseData[ResponseSong])
 async def generate_text(request: RequestSong):    
@@ -658,6 +655,32 @@ async def generate_text(request: GenerateRequest):
     )
 
 if __name__ == "__main__":
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    # Usage
+    download_if_not_exists('averaged_perceptron_tagger')
+    download_if_not_exists('averaged_perceptron_tagger_eng')
+
+    load_llama_cpp_model()
+
+    script.setup()
+
+    if script.rvcModels:
+        script.onChangeRvcModel(script.rvcModels[0])
+    else:
+        print("please load rvc model")
+
+    # parse argument
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--isLoadWhisper", type=bool, default=False, help="load whisper")
+
+    args = parser.parse_args()
+    
+    if args.isLoadWhisper:
+        pythonFile = os.path.join("installer_files","env","python")
+        subprocess.Popen(f"start cmd /k \"{pythonFile} whisper_speech_recognition.py --isRunAiMate=True\"", shell=True)
+
     uvicorn.run(
         app,  # Pass the app directly instead of module string
         host="0.0.0.0",
