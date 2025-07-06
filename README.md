@@ -44,7 +44,7 @@ just open start_ai_mate.bat
 - download vrm model, you can download from https://booth.pm/en/items?tags%5B%5D=VRM, or download 3d model from https://sketchfab.com/feed and then convert 3d model to vrm
 - after you download vrm model, you can click "load vrm" button and then load your vrm
 - click "new / update character"
-- click "go back
+- click "go back"
 
 # OPTIMIZATION
 if you have 12 GB VRAM or more, you can do optimization to make ai mate better
