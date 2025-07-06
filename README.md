@@ -8,12 +8,16 @@ this is backend service for ai mate
 - Windows 10 or above OS
 ## INSTALL FROM DOWNLOAD
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
-- download from release
+- download from this drive:
+- part 1 : https://drive.google.com/file/d/1jKQK0uwi8Wb-qhMFQD82BIuadKN6GAiC/view?usp=sharing
+- part 2 : https://drive.google.com/file/d/1kj3jvfXY9nE5I9dWjjzfnDDVSwvVeKmU/view?usp=sharing
+- extract zip file (make sure all the zip file is in the same folder
 - open install_from_download.bat
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
 - it will automatically installing ffmpeg through chocolatey, please run as administrator
 ## MANUAL INSTALL FROM GIT CLONE
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
+- clone this repository
 - open install_from_git.bat
 
 # RUNNING
