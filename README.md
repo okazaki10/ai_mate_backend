@@ -13,7 +13,7 @@ this is backend service for ai mate
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
 - it will automatically installing ffmpeg through chocolatey, please run as administrator
 ## MANUAL INSTALL FROM GIT CLONE
-- download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe (windows 10) or https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe (windows 11)
+- download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
 - open install_from_git.bat
 
 # RUNNING
