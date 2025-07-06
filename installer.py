@@ -211,7 +211,7 @@ if __name__ == "__main__":
     run_cmd(f"{python_path} -m pip uninstall -y onnxruntime onnxruntime-gpu", assert_success=True, environment=True)
     run_cmd(f"{python_path} -m pip install onnxruntime-gpu", assert_success=True, environment=True)
     print("Installing llama cpp python")
-    run_cmd(f"set CMAKE_ARGS=\"-DGGML_CUDA=on\" && {python_path} -m pip install llama-cpp-python", assert_success=True, environment=True)
+    run_cmd(f"set CMAKE_ARGS=\"-DGGML_CUDA=on\" && {python_path} -m pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir", assert_success=True, environment=True)
 
 
     print("Installing fairseq")
