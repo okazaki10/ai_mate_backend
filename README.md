@@ -39,6 +39,5 @@ if you have 12 GB VRAM or more, you can do optimization to make ai mate better
 - example from `sequenceLength = 4096` to `sequenceLength = 32000`
 
 ## BETTER SPEECH RECOGNITION MODEL
-- edit whisper_speech_recognition.py and
-- change whisper model to large-v3-turbo
+- edit whisper_speech_recognition.py and change whisper model to large-v3-turbo
 - example from `whisper_model = whisper.load_model("base", device)` to `whisper_model = whisper.load_model("large-v3-turbo", device)`
