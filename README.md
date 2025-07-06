@@ -21,7 +21,7 @@ this is backend service for ai mate, ai mate is a virtual / personal assistant l
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
 - clone this repository
 - open install_from_git.bat
-
+- download and extract https://github.com/okazaki10/ai_mate_client/releases/download/v.1.0/ai_mate_client.zip and then put into ai_mate_backend folder
 # RUNNING
 just open start_ai_mate.bat
 - also make sure that your current microphone that you are using is set to default in control panel -> sound -> recording tab
