@@ -41,7 +41,7 @@ setuptools==80.8.0
 pyaudio
 SpeechRecognition
 numpy
-whisperx
+# whisperx
 ctranslate2
 numba
 scipy

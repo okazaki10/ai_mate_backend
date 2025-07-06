@@ -101,7 +101,7 @@ call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%" || ( 
 @rem setup installer env
 call python installer.py %*
 
-start install_chocolatey_administrator
+start add_emotivoice_models.bat
 
 @rem below are functions for the script   next line skips these during normal execution
 goto end

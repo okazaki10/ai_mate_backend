@@ -180,20 +180,20 @@ def check_env():
         sys.exit(1)
 
 def run_cmd(cmd, assert_success=False, environment=False, capture_output=False, env=None):
-    # Use the conda environment
-    if environment:
-        if is_windows():
-            conda_bat_path = os.path.join(script_dir, "installer_files", "conda", "condabin", "conda.bat")
-            cmd = f'"{conda_bat_path}" activate "{conda_env_path}" >nul && {cmd}'
-        else:
-            conda_sh_path = os.path.join(script_dir, "installer_files", "conda", "etc", "profile.d", "conda.sh")
-            cmd = f'. "{conda_sh_path}" && conda activate "{conda_env_path}" && {cmd}'
-
-    # Set executable to None for Windows, bash for everything else
-    executable = None if is_windows() else 'bash'
+    # # Use the conda environment
+    # if environment:
+    #     if is_windows():
+    #         conda_bat_path = os.path.join(script_dir, "installer_files", "conda", "condabin", "conda.bat")
+    #         cmd = f'"{conda_bat_path}" activate "{conda_env_path}" >nul && {cmd}'
+    #     else:
+    #         conda_sh_path = os.path.join(script_dir, "installer_files", "conda", "etc", "profile.d", "conda.sh")
+    #         cmd = f'. "{conda_sh_path}" && conda activate "{conda_env_path}" && {cmd}'
+    # # Set executable to None for Windows, bash for everything else
+    # executable = None if is_windows() else 'bash'
+    # cmd = f"{conda_env_path}/{cmd}"
 
     # Run shell commands
-    result = subprocess.run(cmd, shell=True, capture_output=capture_output, env=env, executable=executable)
+    result = subprocess.run(cmd, shell=True, capture_output=capture_output, env=env)
 
     # Assert the command ran successfully
     if assert_success and result.returncode != 0:
@@ -203,23 +203,24 @@ def run_cmd(cmd, assert_success=False, environment=False, capture_output=False, 
     return result
 
 if __name__ == "__main__":
-    # Verifies we are in a conda environment
-    check_env()
-
     # Install Git and then Pytorch
+    print("Installing ninja")
+    run_cmd(f"{python_path} -m pip install ninja && {python_path} -m pip install py-cpuinfo==9.0.0", assert_success=True, environment=True)
     print("Installing PyTorch.")
+    run_cmd(f"{python_path} -m pip install torch==2.7.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128", assert_success=True, environment=True)
+    run_cmd(f"{python_path} -m pip install -r requirements.txt --upgrade", assert_success=True, environment=True)
+    run_cmd(f"{python_path} -m pip uninstall -y onnxruntime onnxruntime-gpu", assert_success=True, environment=True)
+    run_cmd(f"{python_path} -m pip install onnxruntime-gpu", assert_success=True, environment=True)
+    print("Installing llama cpp python")
+    run_cmd(f"set CMAKE_ARGS=\"-DGGML_CUDA=on\" && {python_path} -m pip install llama-cpp-python", assert_success=True, environment=True)
 
-    run_cmd(f"conda install -y ninja git && python -m pip install torch==2.7.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 && python -m pip install py-cpuinfo==9.0.0 && set CMAKE_ARGS=\"-DGGML_CUDA=on\" && python -m pip install llama-cpp-python", assert_success=True, environment=True)
-    run_cmd("python -m pip install -r requirements.txt --upgrade", assert_success=True, environment=True)
-    run_cmd("python -m pip uninstall -y onnxruntime onnxruntime-gpu", assert_success=True, environment=True)
-    run_cmd("python -m pip install onnxruntime-gpu", assert_success=True, environment=True)
 
     print("Installing fairseq")
     command = f'{python_path} -m pip install git+https://github.com/okazaki10/fairseq.git@main'
     if is_windows():
         run_command_as_admin(command)
-        print("Installing cudnn")
-        downloadCudnn()
+        # print("Installing cudnn")
+        # downloadCudnn()
     else:
         run_cmd(command, assert_success=True, environment=True)
     
