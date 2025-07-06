@@ -9,6 +9,7 @@ this is backend service for ai mate
 ## INSTALL FROM DOWNLOAD
 - download from release
 - open install_from_download.bat
+- installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
 ## MANUAL INSTALL FROM GIT CLONE
 - open install_from_git.bat
 
