@@ -1,6 +1,6 @@
 # AI MATE BACKEND
 this is backend service for ai mate, ai mate is a virtual / personal assistant like desktop mate with AI that can sing!
-- video example and how to download https://www.youtube.com/watch?v=Bz-DD75EHTk
+- video example and how to install https://www.youtube.com/watch?v=Bz-DD75EHTk
 - for ai mate client https://github.com/okazaki10/ai_mate_client
 # INSTALLING
 ## REQUIREMENTS
