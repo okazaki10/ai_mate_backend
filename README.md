@@ -4,7 +4,7 @@ this is backend service for ai mate
 # INSTALLING
 ## REQUIREMENTS
 - NVIDIA GPU
-- GPU with 8 GB of VRAM is recommended
+- GPU with 8 GB of VRAM or above is recommended
 - Windows 10 or above OS
 ## INSTALL FROM DOWNLOAD
 - download from release
