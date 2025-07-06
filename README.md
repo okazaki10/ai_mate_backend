@@ -22,6 +22,8 @@ this is backend service for ai mate, ai mate is a virtual / personal assistant l
 - clone this repository
 - open install_from_git.bat
 - download and extract https://github.com/okazaki10/ai_mate_client/releases/download/v.1.0/ai_mate_client.zip and then put into ai_mate_backend folder
+- download .GGUF model and put into models folder
+- download rvc model and put into rvc_models folder
 # RUNNING
 just open start_ai_mate.bat
 - also make sure that your current microphone that you are using is set to default in control panel -> sound -> recording tab
