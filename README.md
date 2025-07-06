@@ -22,6 +22,10 @@ this is backend service for ai mate
 
 # RUNNING
 just open start_ai_mate.bat
+## MANUAL RUNNING
+- for core server, open start_server.bat
+- for speech recognition, open start_whisper_speech_recognition.bat
+- for ai mate client, go to ai_mate_client folder, and then ai_mate.exe
 
 # FEATURES
 ## SINGING
