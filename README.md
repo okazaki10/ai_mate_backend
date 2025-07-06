@@ -7,7 +7,7 @@ this is backend service for ai mate
 - GPU with 8 GB of VRAM or above is recommended
 - Windows 10 or above OS
 ## INSTALL FROM DOWNLOAD
-- download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe (windows 10) or https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe (windows 11)
+- download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
 - download from release
 - open install_from_download.bat
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
