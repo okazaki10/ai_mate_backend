@@ -18,3 +18,5 @@ rvc_output/
 music_separated/
 uvr_models/
 ai_mate_client/
+edge_tts_output.mp3
+edge_tts_output.wav
