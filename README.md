@@ -1,6 +1,6 @@
 # AI MATE BACKEND
 this is backend service for ai mate
-for ai mate client https://github.com/okazaki10/ai_mate_client
+- for ai mate client https://github.com/okazaki10/ai_mate_client
 # INSTALLING
 ## REQUIREMENTS
 - NVIDIA GPU
