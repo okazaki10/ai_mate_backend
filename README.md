@@ -15,7 +15,7 @@ this is backend service for ai mate
 - open install_from_download.bat
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
 - it will automatically installing ffmpeg through chocolatey, please run as administrator
-- also make sure that your current microphone that you are using is set to default in control panel -> sound -> recording tab
+
 ## MANUAL INSTALL FROM GIT CLONE
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
 - clone this repository
@@ -23,10 +23,12 @@ this is backend service for ai mate
 
 # RUNNING
 just open start_ai_mate.bat
+- also make sure that your current microphone that you are using is set to default in control panel -> sound -> recording tab
 ## MANUAL RUNNING
 - for core server, open start_server.bat
 - for speech recognition, open start_whisper_speech_recognition.bat
 - for ai mate client, go to ai_mate_client folder, and then ai_mate.exe
+
 
 # FEATURES
 ## SINGING
