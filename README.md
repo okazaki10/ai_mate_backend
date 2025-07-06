@@ -48,5 +48,6 @@ if you have 12 GB VRAM or more, you can do optimization to make ai mate better
 - llama cpp for ai llm model https://github.com/ggml-org/llama.cpp
 - whisper for speech recognition https://github.com/openai/whisper
 - sanjuki watsuki for llm model https://huggingface.co/SanjiWatsuki/Silicon-Maid-7B
+- "hatsune miku" vrm model https://booth.pm/en/items/3226395 with crypton piapro license https://booth.pm/en/items/3226395
 - https://github.com/oobabooga/text-generation-webui for backend inspiration
 - https://github.com/shinyflvre/Mate-Engine for client inspiration
