@@ -10,6 +10,7 @@ this is backend service for ai mate
 - download from release
 - open install_from_download.bat
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
+- it will automatically installing ffmpeg through chocolatey, please run as administrator
 ## MANUAL INSTALL FROM GIT CLONE
 - open install_from_git.bat
 
