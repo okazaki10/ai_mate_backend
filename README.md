@@ -47,9 +47,9 @@ if you have 12 GB VRAM or more, you can do optimization to make ai mate better
 # SPECIAL THANKS TO
 - emotivoice for tts with english https://github.com/netease-youdao/EmotiVoice
 - rvc for tts voice https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI
-- llama cpp for ai llm model https://github.com/ggml-org/llama.cpp
+- llama cpp for ai llm loader https://github.com/ggml-org/llama.cpp
 - whisper for speech recognition https://github.com/openai/whisper
-- sanjuki watsuki for llm loader https://huggingface.co/SanjiWatsuki/Silicon-Maid-7B
+- sanjuki watsuki for llm model https://huggingface.co/SanjiWatsuki/Silicon-Maid-7B
 - "hatsune miku" vrm model https://booth.pm/en/items/3226395 with crypton piapro license https://piapro.jp/license/pcl/summary
 - https://github.com/oobabooga/text-generation-webui for backend inspiration
 - https://github.com/shinyflvre/Mate-Engine for client inspiration
