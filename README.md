@@ -44,6 +44,9 @@ if you have 12 GB VRAM or more, you can do optimization to make ai mate better
 - edit whisper_speech_recognition.py and change whisper model to large-v3-turbo
 - example from `whisper_model = whisper.load_model("base", device)` to `whisper_model = whisper.load_model("large-v3-turbo", device)`
 
+# USING ANOTHER AI MODEL
+you can change to another ai model that are .GGUF format, for example this nsfw model https://huggingface.co/TheBloke/Loyal-Macaroni-Maid-7B-GGUF?not-for-all-audiences=true, just replace silicon-maid-7b.Q4_K_M.gguf and put to model to "models" folder
+
 # SPECIAL THANKS TO
 - emotivoice for tts with english https://github.com/netease-youdao/EmotiVoice
 - rvc for tts voice https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI
