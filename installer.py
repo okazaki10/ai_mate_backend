@@ -20,8 +20,8 @@ def is_linux():
     return sys.platform.startswith("linux")
 
 
-# def is_windows():
-#     return sys.platform.startswith("win")
+def is_windows():
+    return sys.platform.startswith("win")
 
 # def download_file(url, filename):
 #     """Download file with progress indication"""
