@@ -1,6 +1,5 @@
-import os, requests, zipfile, subprocess
+import os, subprocess
 import sys
-import shutil
 from pathlib import Path
 
 # Environment
@@ -21,151 +20,151 @@ def is_linux():
     return sys.platform.startswith("linux")
 
 
-def is_windows():
-    return sys.platform.startswith("win")
+# def is_windows():
+#     return sys.platform.startswith("win")
 
-def download_file(url, filename):
-    """Download file with progress indication"""
-    print(f"Downloading {filename}...")
+# def download_file(url, filename):
+#     """Download file with progress indication"""
+#     print(f"Downloading {filename}...")
     
-    try:
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
+#     try:
+#         response = requests.get(url, stream=True)
+#         response.raise_for_status()
         
-        total_size = int(response.headers.get('content-length', 0))
-        downloaded = 0
+#         total_size = int(response.headers.get('content-length', 0))
+#         downloaded = 0
         
-        with open(filename, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    if total_size > 0:
-                        percent = (downloaded / total_size) * 100
-                        print(f"\rProgress: {percent:.1f}%", end='', flush=True)
+#         with open(filename, 'wb') as f:
+#             for chunk in response.iter_content(chunk_size=8192):
+#                 if chunk:
+#                     f.write(chunk)
+#                     downloaded += len(chunk)
+#                     if total_size > 0:
+#                         percent = (downloaded / total_size) * 100
+#                         print(f"\rProgress: {percent:.1f}%", end='', flush=True)
         
-        print(f"\nDownload completed: {filename}")
-        return True
+#         print(f"\nDownload completed: {filename}")
+#         return True
         
-    except requests.exceptions.RequestException as e:
-        print(f"Download failed: {e}")
-        return False
+#     except requests.exceptions.RequestException as e:
+#         print(f"Download failed: {e}")
+#         return False
 
-def extract_zip(zip_path, extract_to):
-    """Extract zip file to specified directory"""
-    print(f"Extracting {zip_path} to {extract_to}...")
+# def extract_zip(zip_path, extract_to):
+#     """Extract zip file to specified directory"""
+#     print(f"Extracting {zip_path} to {extract_to}...")
     
-    try:
-        # Create destination directory if it doesn't exist
-        Path(extract_to).mkdir(parents=True, exist_ok=True)
+#     try:
+#         # Create destination directory if it doesn't exist
+#         Path(extract_to).mkdir(parents=True, exist_ok=True)
         
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_to)
+#         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+#             zip_ref.extractall(extract_to)
         
-        print(f"Extraction completed to: {extract_to}")
-        return True
+#         print(f"Extraction completed to: {extract_to}")
+#         return True
         
-    except zipfile.BadZipFile:
-        print("Error: Invalid zip file")
-        return False
-    except Exception as e:
-        print(f"Extraction failed: {e}")
-        return False
+#     except zipfile.BadZipFile:
+#         print("Error: Invalid zip file")
+#         return False
+#     except Exception as e:
+#         print(f"Extraction failed: {e}")
+#         return False
 
 
-def move_bin_files(extract_path, final_path):
-    """Move files from bin directory to final destination"""
-    bin_path = os.path.join(extract_path, "cudnn-windows-x86_64-8.9.7.29_cuda12-archive", "bin")
+# def move_bin_files(extract_path, final_path):
+#     """Move files from bin directory to final destination"""
+#     bin_path = os.path.join(extract_path, "cudnn-windows-x86_64-8.9.7.29_cuda12-archive", "bin")
     
-    if not os.path.exists(bin_path):
-        print(f"Warning: bin directory not found at {bin_path}")
-        return False
+#     if not os.path.exists(bin_path):
+#         print(f"Warning: bin directory not found at {bin_path}")
+#         return False
     
-    print(f"Moving files from {bin_path} to {final_path}...")
+#     print(f"Moving files from {bin_path} to {final_path}...")
     
-    try:
-        # Create final destination directory if it doesn't exist
-        Path(final_path).mkdir(parents=True, exist_ok=True)
+#     try:
+#         # Create final destination directory if it doesn't exist
+#         Path(final_path).mkdir(parents=True, exist_ok=True)
         
-        # Get list of files in bin directory
-        bin_files = [f for f in os.listdir(bin_path) if os.path.isfile(os.path.join(bin_path, f))]
+#         # Get list of files in bin directory
+#         bin_files = [f for f in os.listdir(bin_path) if os.path.isfile(os.path.join(bin_path, f))]
         
-        if not bin_files:
-            print("No files found in bin directory")
-            return False
+#         if not bin_files:
+#             print("No files found in bin directory")
+#             return False
         
-        # Move each file
-        for filename in bin_files:
-            src_file = os.path.join(bin_path, filename)
-            dst_file = os.path.join(final_path, filename)
+#         # Move each file
+#         for filename in bin_files:
+#             src_file = os.path.join(bin_path, filename)
+#             dst_file = os.path.join(final_path, filename)
             
-            # If destination file exists, remove it first
-            if os.path.exists(dst_file):
-                os.remove(dst_file)
+#             # If destination file exists, remove it first
+#             if os.path.exists(dst_file):
+#                 os.remove(dst_file)
             
-            shutil.move(src_file, dst_file)
-            print(f"  Moved: {filename}")
+#             shutil.move(src_file, dst_file)
+#             print(f"  Moved: {filename}")
         
-        print(f"✓ Successfully moved {len(bin_files)} files to {final_path}")
-        return True
+#         print(f"✓ Successfully moved {len(bin_files)} files to {final_path}")
+#         return True
         
-    except Exception as e:
-        print(f"Error moving files: {e}")
-        return False
+#     except Exception as e:
+#         print(f"Error moving files: {e}")
+#         return False
 
-def downloadCudnn():
-    url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-8.9.7.29_cuda12-archive.zip"
-    filename = "cudnn-windows-x86_64-8.9.7.29_cuda12-archive.zip"
-    temp_extract_path = "temp_cudnn_extract"  # Temporary extraction directory
-    final_path = os.path.join("installer_files", "env", "Lib", "site-packages", "ctranslate2")
+# def downloadCudnn():
+#     url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-8.9.7.29_cuda12-archive.zip"
+#     filename = "cudnn-windows-x86_64-8.9.7.29_cuda12-archive.zip"
+#     temp_extract_path = "temp_cudnn_extract"  # Temporary extraction directory
+#     final_path = os.path.join("installer_files", "env", "Lib", "site-packages", "ctranslate2")
     
-    filepath = Path(f"{final_path}/cudnn_adv_infer64_8.dll")
-    if filepath.exists():
-        return
+#     filepath = Path(f"{final_path}/cudnn_adv_infer64_8.dll")
+#     if filepath.exists():
+#         return
     
-    print("cuDNN Downloader and Extractor")
-    print("=" * 40)
-    print(f"URL: {url}")
-    print(f"Final destination: {final_path}")
-    print()
+#     print("cuDNN Downloader and Extractor")
+#     print("=" * 40)
+#     print(f"URL: {url}")
+#     print(f"Final destination: {final_path}")
+#     print()
     
-    # Check if requests module is available
-    try:
-        import requests
-    except ImportError:
-        print("Error: 'requests' module not found. Please install it with:")
-        print("pip install requests")
-        sys.exit(1)
+#     # Check if requests module is available
+#     try:
+#         import requests
+#     except ImportError:
+#         print("Error: 'requests' module not found. Please install it with:")
+#         print("pip install requests")
+#         sys.exit(1)
     
-    # Download the file
-    if download_file(url, filename):
-        print()
+#     # Download the file
+#     if download_file(url, filename):
+#         print()
         
-        # Extract the file to temporary directory
-        if extract_zip(filename, temp_extract_path):
-            print()
+#         # Extract the file to temporary directory
+#         if extract_zip(filename, temp_extract_path):
+#             print()
             
-            # Move bin files to final destination
-            if move_bin_files(temp_extract_path, final_path):
-                print()
-                print("✓ Download, extraction, and file moving completed successfully!")
+#             # Move bin files to final destination
+#             if move_bin_files(temp_extract_path, final_path):
+#                 print()
+#                 print("✓ Download, extraction, and file moving completed successfully!")
                 
-                # Clean up temporary files and directories
-                try:
-                    os.remove(filename)
-                    shutil.rmtree(temp_extract_path)
-                    print(f"✓ Cleaned up temporary files and directories")
-                except Exception as e:
-                    print(f"Note: Could not clean up temporary files: {e}")
-            else:
-                print("✗ File moving failed")
-                sys.exit(1)
-        else:
-            print("✗ Extraction failed")
-            sys.exit(1)
-    else:
-        print("✗ Download failed")
-        sys.exit(1)
+#                 # Clean up temporary files and directories
+#                 try:
+#                     os.remove(filename)
+#                     shutil.rmtree(temp_extract_path)
+#                     print(f"✓ Cleaned up temporary files and directories")
+#                 except Exception as e:
+#                     print(f"Note: Could not clean up temporary files: {e}")
+#             else:
+#                 print("✗ File moving failed")
+#                 sys.exit(1)
+#         else:
+#             print("✗ Extraction failed")
+#             sys.exit(1)
+#     else:
+#         print("✗ Download failed")
+#         sys.exit(1)
 
 def check_env():
     # If we have access to conda, we are probably in an environment
