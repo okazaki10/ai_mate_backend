@@ -207,12 +207,12 @@ if __name__ == "__main__":
     run_cmd(f"{python_path} -m pip install ninja && {python_path} -m pip install py-cpuinfo==9.0.0", assert_success=True, environment=True)
     print("Installing PyTorch.")
     run_cmd(f"{python_path} -m pip install torch==2.7.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128", assert_success=True, environment=True)
+    print("Installing llama cpp python")
+    run_cmd(f"set CMAKE_ARGS=\"-DGGML_CUDA=on\" && {python_path} -m pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir", assert_success=True, environment=True)
+    print("Installing dependency")
     run_cmd(f"{python_path} -m pip install -r requirements.txt --upgrade", assert_success=True, environment=True)
     run_cmd(f"{python_path} -m pip uninstall -y onnxruntime onnxruntime-gpu", assert_success=True, environment=True)
     run_cmd(f"{python_path} -m pip install onnxruntime-gpu", assert_success=True, environment=True)
-    print("Installing llama cpp python")
-    run_cmd(f"set CMAKE_ARGS=\"-DGGML_CUDA=on\" && {python_path} -m pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir", assert_success=True, environment=True)
-
 
     print("Installing fairseq")
     command = f'{python_path} -m pip install git+https://github.com/okazaki10/fairseq.git@main'
