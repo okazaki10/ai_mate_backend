@@ -11,3 +11,6 @@ this is backend service for ai mate
 - click install_from_download.bat
 ## MANUAL INSTALL FROM GIT CLONE
 - click install_from_git.bat
+
+# RUNNING
+just click start_ai_mate.bat
