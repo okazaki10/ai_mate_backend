@@ -59,6 +59,8 @@ git+https://github.com/openai/whisper.git
 # https://github.com/SYSTRAN/faster-whisper/discussions/715#discussioncomment-10903540
 yt-dlp
 audio-separator[gpu]
+requests 
+beautifulsoup4
 
 # CUDA wheels
 # https://github.com/turboderp-org/exllamav2/releases/download/v0.3.1/exllamav2-0.3.1+cu128.torch2.7.0-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
