@@ -1,6 +1,7 @@
 # AI MATE BACKEND
-this is backend service for ai mate
-
+this is backend service for ai mate, ai mate is a virtual / personal assistant like desktop mate with AI that can sing, has emotion, multiple languages, and completely free!
+- video example and how to install https://www.youtube.com/watch?v=Bz-DD75EHTk
+- for ai mate client https://github.com/okazaki10/ai_mate_client
 # INSTALLING
 ## REQUIREMENTS
 - NVIDIA GPU
@@ -8,16 +9,28 @@ this is backend service for ai mate
 - Windows 10 or above OS
 ## INSTALL FROM DOWNLOAD
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
-- download from release
+- download from this drive:
+- part 1 : https://drive.google.com/file/d/1jKQK0uwi8Wb-qhMFQD82BIuadKN6GAiC/view?usp=sharing
+- part 2 : https://drive.google.com/file/d/1kj3jvfXY9nE5I9dWjjzfnDDVSwvVeKmU/view?usp=sharing
+- extract zip file (make sure all the zip file is in the same folder
 - open install_from_download.bat
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
 - it will automatically installing ffmpeg through chocolatey, please run as administrator
+
 ## MANUAL INSTALL FROM GIT CLONE
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
+- clone this repository
 - open install_from_git.bat
-
+- download and extract https://github.com/okazaki10/ai_mate_client/releases/download/v.1.0/ai_mate_client.zip and then put into ai_mate_backend folder
+- download .GGUF model and put into models folder, example model https://huggingface.co/TheBloke/Silicon-Maid-7B-GGUF/blob/main/silicon-maid-7b.Q4_K_M.gguf
+- download rvc model and put into rvc_models folder, example rvc model https://huggingface.co/javinfamous/infamous_miku_v2/resolve/main/infamous_miku_v2.zip
 # RUNNING
 just open start_ai_mate.bat
+- also make sure that your current microphone that you are using is set to default in control panel -> sound -> recording tab
+## MANUAL RUNNING
+- for core server, open start_server.bat
+- for speech recognition, open start_whisper_speech_recognition.bat
+- for ai mate client, go to ai_mate_client folder, and then ai_mate.exe
 
 # FEATURES
 ## SINGING
@@ -33,7 +46,7 @@ just open start_ai_mate.bat
 - download vrm model, you can download from https://booth.pm/en/items?tags%5B%5D=VRM, or download 3d model from https://sketchfab.com/feed and then convert 3d model to vrm
 - after you download vrm model, you can click "load vrm" button and then load your vrm
 - click "new / update character"
-- click "go back
+- click "go back"
 
 # OPTIMIZATION
 if you have 12 GB VRAM or more, you can do optimization to make ai mate better
