@@ -580,6 +580,7 @@ async def generate_text(request: GenerateRequest):
         tts_output = tts_output.lower()
         tts_output = script.tts_preprocessor.remove_emojis_with_library(tts_output)
         tts_output = script.tts_preprocessor.replace_abbreviations(tts_output)
+        tts_output = script.tts_preprocessor.replace_numbers(tts_output)
     
     if request.language != "en":
         outputTranslated = await translator.translate(tts_output, dest=request.language, src="en")
