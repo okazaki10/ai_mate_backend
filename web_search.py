@@ -5,49 +5,21 @@ import json
 import time
 from typing import List, Dict, Optional
 import re
+from ddgs import DDGS
 
 class WebSearchLLM:
     """
     A web search and content extraction tool designed for LLM consumption.
-    Supports multiple search engines and extracts clean, structured content.
+    Uses DuckDuckGo via the ddgs library and extracts clean, structured content.
     """
     
     def __init__(self):
         self.session = requests.Session()
-        # self.session.headers.update({
-        #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        #     'Accept-Language': 'en-US,en;q=0.9'
-        # })
-    
-    def resolve_redirect_url(self, url: str) -> str:
-        """
-        Resolve redirect URLs to get the actual destination URL
-        """
-        try:
-            # Handle Bing redirect URLs
-            if 'bing.com/ck/a?' in url:
-                # Extract the actual URL from the redirect parameter
-                parsed = urllib.parse.urlparse(url)
-                query_params = urllib.parse.parse_qs(parsed.query)
-                if 'u' in query_params:
-                    # Bing encodes the URL in base64-like format, decode it
-                    encoded_url = query_params['u'][0]
-                    # Remove the 'a1' prefix and decode
-                    if encoded_url.startswith('a1'):
-                        encoded_url = encoded_url[2:]
-                    try:
-                        actual_url = urllib.parse.unquote(encoded_url)
-                        return actual_url
-                    except:
-                        pass
-            
-            # For other redirect URLs, follow the redirect
-            response = self.session.head(url, allow_redirects=True, timeout=10)
-            return response.url
-            
-        except Exception as e:
-            print(f"Error resolving redirect for {url}: {e}")
-            return url
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9'
+        })
+        self.ddgs = DDGS()
     
     def clean_unicode_content(self, text: str) -> str:
         """
@@ -76,99 +48,29 @@ class WebSearchLLM:
         
         return text
     
-    def search_bing(self, query: str, num_results: int = 10, language: str = 'en') -> List[Dict]:
+    def search_duckduckgo(self, query: str, num_results: int = 10, region: str = 'us-en') -> List[Dict]:
         """
-        Search Bing and return structured results with resolved URLs
-        """
-        try:
-            # URL encode the query
-            encoded_query = urllib.parse.quote_plus(query)
-            
-            # Force English results with language and market parameters
-            url = f"https://www.bing.com/search?q={encoded_query}&count={num_results}&setlang={language}&mkt={language}-US&ensearch=1"
-            
-            response = self.session.get(url)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            results = []
-            
-            # Parse Bing search results
-            for result in soup.find_all('li', class_='b_algo'):
-                try:
-                    title_elem = result.find('h2')
-                    if not title_elem:
-                        continue
-                    
-                    link_elem = title_elem.find('a')
-                    if not link_elem:
-                        continue
-                    
-                    title = title_elem.get_text(strip=True)
-                    original_url = link_elem.get('href')
-                    
-                    # Resolve redirect URL to get actual URL
-                    resolved_url = self.resolve_redirect_url(original_url)
-                    
-                    # Get snippet/description
-                    snippet_elem = result.find('p') or result.find('div', class_='b_caption')
-                    snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
-                    
-                    results.append({
-                        'title': title,
-                        'url': resolved_url,
-                        'original_url': original_url,  # Keep original for debugging
-                        'snippet': snippet,
-                        'source': 'bing'
-                    })
-                except Exception as e:
-                    print(f"Error parsing result: {e}")
-                    continue
-            
-            return results
-            
-        except Exception as e:
-            print(f"Bing search error: {e}")
-            return []
-    
-    def search_duckduckgo(self, query: str, num_results: int = 10) -> List[Dict]:
-        """
-        Alternative search using DuckDuckGo
+        Search DuckDuckGo using the ddgs library
         """
         try:
-            # DuckDuckGo instant answer API
-            url = "https://api.duckduckgo.com/"
-            params = {
-                'q': query,
-                'format': 'json',
-                'no_html': '1',
-                'skip_disambig': '1'
-            }
-            
-            response = self.session.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
             results = []
             
-            # Add instant answer if available
-            if data.get('Abstract'):
+            # Use the text search method from ddgs
+            search_results = self.ddgs.text(
+                keywords=query,
+                region=region,
+                safesearch='moderate',
+                timelimit=None,
+                max_results=num_results
+            )
+            
+            for result in search_results:
                 results.append({
-                    'title': data.get('Heading', query),
-                    'url': data.get('AbstractURL', ''),
-                    'snippet': data.get('Abstract', ''),
-                    'source': 'duckduckgo_instant'
+                    'title': result.get('title', ''),
+                    'url': result.get('href', ''),
+                    'snippet': result.get('body', ''),
+                    'source': 'duckduckgo'
                 })
-            
-            # Add related topics
-            for topic in data.get('RelatedTopics', [])[:num_results]:
-                if isinstance(topic, dict) and 'Text' in topic:
-                    results.append({
-                        'title': topic.get('Text', '').split(' - ')[0],
-                        'url': topic.get('FirstURL', ''),
-                        'snippet': topic.get('Text', ''),
-                        'source': 'duckduckgo_related'
-                    })
             
             return results
             
@@ -176,16 +78,70 @@ class WebSearchLLM:
             print(f"DuckDuckGo search error: {e}")
             return []
     
+    def search_duckduckgo_news(self, query: str, num_results: int = 10, region: str = 'us-en') -> List[Dict]:
+        """
+        Search DuckDuckGo news using the ddgs library
+        """
+        try:
+            results = []
+            
+            # Use the news search method from ddgs
+            news_results = self.ddgs.news(
+                keywords=query,
+                region=region,
+                safesearch='moderate',
+                timelimit='m',  # Last month
+                max_results=num_results
+            )
+            
+            for result in news_results:
+                results.append({
+                    'title': result.get('title', ''),
+                    'url': result.get('url', ''),
+                    'snippet': result.get('body', ''),
+                    'date': result.get('date', ''),
+                    'source': 'duckduckgo_news'
+                })
+            
+            return results
+            
+        except Exception as e:
+            print(f"DuckDuckGo news search error: {e}")
+            return []
+    
+    def search_duckduckgo_instant(self, query: str) -> Dict:
+        """
+        Get DuckDuckGo instant answer
+        """
+        try:
+            # Use the answers method from ddgs
+            answer_results = self.ddgs.answers(query)
+            
+            for result in answer_results:
+                return {
+                    'title': result.get('text', ''),
+                    'url': result.get('url', ''),
+                    'snippet': result.get('text', ''),
+                    'source': 'duckduckgo_instant',
+                    'success': True
+                }
+            
+            return {'success': False}
+            
+        except Exception as e:
+            print(f"DuckDuckGo instant answer error: {e}")
+            return {'success': False}
+    
     def extract_content(self, url: str, max_length: int = 2000) -> Dict:
         """
         Extract and clean content from a webpage for LLM consumption
         """
         try:
-            # Skip if URL is still a redirect or invalid
-            if not url or 'bing.com/ck/a?' in url:
+            # Skip if URL is invalid
+            if not url or not url.startswith(('http://', 'https://')):
                 return {
                     'title': "",
-                    'content': "Invalid or redirect URL",
+                    'content': "Invalid URL",
                     'url': url,
                     'length': 0,
                     'success': False
@@ -289,19 +245,27 @@ class WebSearchLLM:
             }
     
     def create_llm_prompt(self, query: str, search_results: List[Dict], 
-                         content_extracts: List[Dict] = None) -> str:
+                         content_extracts: List[Dict] = None, 
+                         instant_answer: Dict = None) -> str:
         """
         Create a structured prompt for LLM based on search results and content
         """
         prompt = f"# Search Query: {query}\n\n"
+        
+        # Add instant answer if available
+        if instant_answer and instant_answer.get('success'):
+            prompt += "## Instant Answer:\n\n"
+            prompt += f"**{instant_answer['title']}**\n"
+            prompt += f"{instant_answer['snippet']}\n\n"
         
         # Add search results
         prompt += "## Search Results:\n\n"
         for i, result in enumerate(search_results, 1):
             prompt += f"**Result {i}:**\n"
             prompt += f"- Title: {result['title']}\n"
-            prompt += f"- URL: {result['url']}\n"
             prompt += f"- Snippet: {result['snippet']}\n"
+            if result.get('date'):
+                prompt += f"- Date: {result['date']}\n"
             prompt += f"- Source: {result['source']}\n\n"
         
         # Add extracted content if available
@@ -309,40 +273,46 @@ class WebSearchLLM:
             prompt += "## Extracted Content:\n\n"
             for i, extract in enumerate(content_extracts, 1):
                 if extract['success']:
-                    prompt += f"**Content {i} from {extract['url']}:**\n"
+                    prompt += f"**Content {i}:**\n"
                     prompt += f"Title: {extract['title']}\n"
                     prompt += f"Content: {extract['content']}\n\n"
-                else:
-                    prompt += f"**Content {i} from {extract['url']}:**\n"
-                    prompt += f"Failed to extract: {extract['content']}\n\n"
         
         prompt += "## Instructions for LLM:\n"
-        prompt += "Based on the search results and extracted content above, please provide a comprehensive answer to the query. "
-        prompt += "Cite the sources when making specific claims and indicate if information is from search snippets vs full content extraction."
+        prompt += "Based on the search results and extracted content above, please provide a summary to the query."
         
         return prompt
     
     def comprehensive_search(self, query: str, extract_content: bool = True, 
-                           include_wikipedia: bool = True, num_results: int = 5,
-                           language: str = 'en') -> Dict:
+                           include_wikipedia: bool = True, include_news: bool = False,
+                           num_results: int = 5, region: str = 'us-en') -> Dict:
         """
         Perform comprehensive search and content extraction
         """
         results = {
             'query': query,
             'search_results': [],
+            'news_results': [],
             'content_extracts': [],
             'wikipedia_summary': None,
+            'instant_answer': None,
             'llm_prompt': ""
         }
         
-        # Perform search
-        search_results = self.search_bing(query, num_results, language)
-        if not search_results:
-            print("Bing search failed, trying DuckDuckGo...")
-            search_results = self.search_duckduckgo(query, num_results)
+        # # Get instant answer
+        # print("Getting instant answer...")
+        # instant_answer = self.search_duckduckgo_instant(query)
+        # results['instant_answer'] = instant_answer
         
+        # Perform regular search
+        print("Performing web search...")
+        search_results = self.search_duckduckgo(query, num_results, region)
         results['search_results'] = search_results
+        
+        # Perform news search if requested
+        if include_news:
+            print("Performing news search...")
+            news_results = self.search_duckduckgo_news(query, num_results, region)
+            results['news_results'] = news_results
         
         # Extract content from top results
         if extract_content and search_results:
@@ -361,8 +331,9 @@ class WebSearchLLM:
             results['wikipedia_summary'] = wiki_summary
         
         # Create LLM prompt
+        all_results = search_results + results['news_results']
         results['llm_prompt'] = self.create_llm_prompt(
-            query, search_results, results['content_extracts']
+            query, all_results, results['content_extracts']
         )
         
         return results
@@ -373,21 +344,22 @@ if __name__ == "__main__":
     # Initialize the search tool
     searcher = WebSearchLLM()
     
-    # Example: Test redirect resolution
-    print("=== Testing Redirect Resolution ===")
-    test_redirect = "https://www.bing.com/ck/a?!&&p=f57492be33f656792504093de368c200ae687f49b880d75b9943392acd1d0331JmltdHM9MTc1MTg0NjQwMA&ptn=3&ver=2&hsh=4&fclid=15ab84ce-d942-6afc-1984-92ecd8566be0&u=a1aHR0cHM6Ly9pZC53aWtpcGVkaWEub3JnL3dpa2kvUHJhYm93b19TdWJpYW50bw&ntb=1"
-    resolved = searcher.resolve_redirect_url(test_redirect)
-    print(f"Original: {test_redirect}")
-    print(f"Resolved: {resolved}")
-    
     # Example: Comprehensive search for LLM
-    print("\n=== Comprehensive Search for LLM ===")
+    print("=== Comprehensive Search for LLM ===")
     comprehensive_result = searcher.comprehensive_search(
-        "donald trump", 
+        "geert wilders recent polls", 
         extract_content=True, 
         include_wikipedia=True,
-        num_results=3
+        include_news=False,
+        num_results=5
     )
+    
+    # # Display instant answer
+    # if comprehensive_result['instant_answer'] and comprehensive_result['instant_answer'].get('success'):
+    #     print("\nInstant Answer:")
+    #     print(f"Title: {comprehensive_result['instant_answer']['title']}")
+    #     print(f"Content: {comprehensive_result['instant_answer']['snippet'][:200]}...")
+    #     print()
     
     print("\nSearch Results:")
     for i, result in enumerate(comprehensive_result['search_results'], 1):
@@ -406,6 +378,13 @@ if __name__ == "__main__":
             print(f"   Content Preview: {extract['content'][:200]}...")
         else:
             print(f"   Error: {extract['content']}")
+        print()
+    
+    # Wikipedia summary
+    if comprehensive_result['wikipedia_summary'] and comprehensive_result['wikipedia_summary']['success']:
+        print("\nWikipedia Summary:")
+        print(f"Title: {comprehensive_result['wikipedia_summary']['title']}")
+        print(f"Summary: {comprehensive_result['wikipedia_summary']['summary'][:300]}...")
         print()
     
     # Save results to file

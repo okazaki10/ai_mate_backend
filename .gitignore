@@ -20,3 +20,5 @@ uvr_models/
 ai_mate_client/
 edge_tts_output.mp3
 edge_tts_output.wav
+llm_prompt.txt
+search_results.json

@@ -20,6 +20,8 @@ import librosa
 import argparse
 import subprocess
 import sys
+from web_search import WebSearchLLM
+
 # Save original argv
 original_argv = sys.argv[:]
 
@@ -65,6 +67,7 @@ class GenerateRequest(BaseModel):
     character_name: str = ""
     prompt: str = ""
     language: str = ""
+    isWebSearch: bool = False
     max_new_tokens: Optional[int] = 200
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.9
@@ -136,6 +139,14 @@ def download_if_not_exists(resource_name):
 
 def loadCharacterTemplate():
     filepath = Path('character_template/alpaca_template.yaml')
+    if not filepath.exists():
+        return ""
+
+    file_contents = open(filepath, 'r', encoding='utf-8').read()
+    return yaml.safe_load(file_contents)
+
+def loadWebSearchTemplate():
+    filepath = Path('character_template/alpaca_web_search_template.yaml')
     if not filepath.exists():
         return ""
 
@@ -296,6 +307,11 @@ def replaceContextPrompt(characterTemplate, character: Character, chatText, user
     newPrompt = newPrompt.replace(r"{SYSTEM_NAME}", character.name)
     newPrompt = newPrompt.replace(r"{DESCRIPTION}", character.description)
     newPrompt = newPrompt.replace(r"{USER_NAME}", userName)
+    return newPrompt
+
+def replaceContextWebSearch(characterTemplate, chatText):
+    newPrompt = characterTemplate["CONTEXT"]
+    newPrompt = newPrompt.replace(r"{SEARCH_RESULT}", chatText)
     return newPrompt
 
 def getCharacter(characterName) -> Character:    
@@ -530,28 +546,50 @@ async def generate_text(request: GenerateRequest):
         chatTranslated=request.prompt
     )
 
-    chat.messages.append(chatTemplate)
-    chatText = "\n".join(convertChatDialogue(chat.messages))
-    newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
-    print(newPrompt)
+    promptTokens = 0
+    newPrompt = ""
+    if not request.isWebSearch:
+        chat.messages.append(chatTemplate)
+        chatText = "\n".join(convertChatDialogue(chat.messages))
+        newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
 
-    promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
-    print(promptTokens)
+        print(newPrompt)
 
-    # check if the prompt token is larger than sequence length, if it's larger, then the old dialogue will be removed so the model can produce output         
-    while promptTokens + request.max_new_tokens > sequenceLength:
-        if len(chat.messages) > 0:
-            chat.messages.pop(0)
-            chatText = "\n".join(convertChatDialogue(chat.messages))
-            newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
-            promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
-        else:
-            break
+        promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
+        print(promptTokens)
+
+        # check if the prompt token is larger than sequence length, if it's larger, then the old dialogue will be removed so the model can produce output         
+        while promptTokens + request.max_new_tokens > sequenceLength:
+            if len(chat.messages) > 0:
+                chat.messages.pop(0)
+                chatText = "\n".join(convertChatDialogue(chat.messages))
+                newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
+                promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
+            else:
+                break
+    else:
+        webSearchTemplate = loadWebSearchTemplate()
+        webSearch = WebSearchLLM()
+        searchResult = webSearch.comprehensive_search(request.prompt)
+        newPrompt = replaceContextWebSearch(webSearchTemplate, searchResult["llm_prompt"])
+
+        # Save results to file
+        with open('search_results.json', 'w', encoding='utf-8') as f:
+            # Remove the llm_prompt for JSON serialization (it's too long)
+            save_data = {k: v for k, v in searchResult.items() if k != 'llm_prompt'}
+            json.dump(save_data, f, indent=2, ensure_ascii=False)
+        
+        print("Results saved to search_results.json")
+        
+        with open('llm_prompt.txt', 'w', encoding='utf-8') as f:
+            f.write(searchResult['llm_prompt'])
+    
+    print("LLM prompt saved to llm_prompt.txt")
 
     output = llm_model(
         newPrompt,
         max_tokens=request.max_new_tokens,
-        stop=["</s>",f"{request.name}:","#"],
+        stop=["</s>",f"{request.name}:","#","Search Result:"],
         echo=False  # Don't include the prompt in the response
     )
 
@@ -574,6 +612,7 @@ async def generate_text(request: GenerateRequest):
     tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
     newCleanedOutput = tts_output
     tts_output = script.tts_preprocessor.removeParentheses(tts_output)
+    tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
     translatedResponse = tts_output
 
     if request.language == "en":
@@ -614,7 +653,7 @@ async def generate_text(request: GenerateRequest):
     #     script.params['rvc_language'] = "english_or_chinese"
     
     actionParams = ActionParams(
-        emotions=actionParams.get('EMOTION') or [],
+        emotions=actionParams.get('EMOTION') or ['NEUTRAL'],
         actions=actionParams.get('ACTION') or []
     )
 
@@ -629,8 +668,12 @@ async def generate_text(request: GenerateRequest):
 
     outputToken = len(llm_model.tokenize(newOutput.encode('utf-8')))
 
+    outputName = character.name
+    if request.isWebSearch:
+        outputName = "Search Result"
+
     chatTemplateOutput = ChatTemplate(
-        name=character.name,
+        name=outputName,
         chat=newCleanedOutput,
         chatTranslated=translatedResponse,
         actionParams=actionParams
@@ -641,7 +684,7 @@ async def generate_text(request: GenerateRequest):
     saveChat(chat, request.character_name)
     
     generateResponse = GenerateResponse( 
-        character_name=character.name,
+        character_name=outputName,
         generated_text=translatedResponse,
         prompt_token=promptTokens,
         output_token=outputToken,
