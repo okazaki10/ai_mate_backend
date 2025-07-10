@@ -343,12 +343,12 @@ def startVoiceChange(video_url, rvcModel):
     # Mix them together (overlay)
     mixed = instrumentalWav.overlay(vocalWav)
 
-    outputPath = "rvc_output"
+    outputPath = "rvc_music_output"
     Path(outputPath).mkdir(exist_ok=True)
 
-    outputPathFull = f"{outputPath}/{title}_{rvcModel}.wav"
+    outputPathFull = f"{outputPath}/{title}_{rvcModel}.mp3"
     # Export to a new file
-    mixed.export(outputPathFull, format="wav")
+    mixed.export(outputPathFull, format="mp3")
 
     return vocal, instrument, outputPathFull, title
 
@@ -358,7 +358,7 @@ if __name__ == "__main__":
         print("input youtube url")
         video_url = input("youtube url: ")
 
-        startVoiceChange(video_url, "MikuDiva")
+        startVoiceChange(video_url, "infamous_miku_v2")
             
         # For playlist (uncomment to use):
         # playlist_url = "https://www.youtube.com/playlist?list=PLAYLIST_ID"

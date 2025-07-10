@@ -14,7 +14,7 @@ installer_files/
 chat_history/
 models/
 rvc_models/
-rvc_output/
+rvc_music_output/
 music_separated/
 uvr_models/
 ai_mate_client/

@@ -526,6 +526,13 @@ async def generate_text(request: RequestSong):
         message = ""
     )
 
+def generateOutput(newPrompt, request:GenerateRequest):
+    return llm_model(
+        newPrompt,
+        max_tokens=request.max_new_tokens,
+        stop=["</s>",f"{request.name}:","#","Search Result:"],
+        echo=False  # Don't include the prompt in the response
+    )
 
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):    
@@ -548,6 +555,7 @@ async def generate_text(request: GenerateRequest):
 
     promptTokens = 0
     newPrompt = ""
+    newOutput = ""
     if not request.isWebSearch:
         chat.messages.append(chatTemplate)
         chatText = "\n".join(convertChatDialogue(chat.messages))
@@ -567,11 +575,25 @@ async def generate_text(request: GenerateRequest):
                 promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
             else:
                 break
+
+        output = generateOutput(newPrompt, request)
+        newOutput = output['choices'][0]['text']
+
     else:
         webSearchTemplate = loadWebSearchTemplate()
-        webSearch = WebSearchLLM()
-        searchResult = webSearch.comprehensive_search(request.prompt)
-        newPrompt = replaceContextWebSearch(webSearchTemplate, searchResult["llm_prompt"])
+       
+        for _ in range(0,5):
+            try:
+                webSearch = WebSearchLLM()
+                searchResult = webSearch.comprehensive_search(request.prompt)
+                newPrompt = replaceContextWebSearch(webSearchTemplate, searchResult["llm_prompt"])
+                output = generateOutput(newPrompt, request)
+                newOutput = output['choices'][0]['text']
+                print(f"output web search {newOutput}")
+                if newOutput.upper().find("SEARCH_AGAIN") == -1:
+                    break
+            except Exception as e:
+                print(e) 
 
         # Save results to file
         with open('search_results.json', 'w', encoding='utf-8') as f:
@@ -583,19 +605,9 @@ async def generate_text(request: GenerateRequest):
         
         with open('llm_prompt.txt', 'w', encoding='utf-8') as f:
             f.write(searchResult['llm_prompt'])
+            print("LLM prompt saved to llm_prompt.txt")
     
-    print("LLM prompt saved to llm_prompt.txt")
-
-    output = llm_model(
-        newPrompt,
-        max_tokens=request.max_new_tokens,
-        stop=["</s>",f"{request.name}:","#","Search Result:"],
-        echo=False  # Don't include the prompt in the response
-    )
-
-    print(f"responsenya {output}")
-
-    newOutput = output['choices'][0]['text']
+    print(f"responsenya {newOutput}")
 
     if newOutput == "":
         return ResponseData[GenerateResponse](

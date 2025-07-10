@@ -109,29 +109,6 @@ class WebSearchLLM:
             print(f"DuckDuckGo news search error: {e}")
             return []
     
-    def search_duckduckgo_instant(self, query: str) -> Dict:
-        """
-        Get DuckDuckGo instant answer
-        """
-        try:
-            # Use the answers method from ddgs
-            answer_results = self.ddgs.answers(query)
-            
-            for result in answer_results:
-                return {
-                    'title': result.get('text', ''),
-                    'url': result.get('url', ''),
-                    'snippet': result.get('text', ''),
-                    'source': 'duckduckgo_instant',
-                    'success': True
-                }
-            
-            return {'success': False}
-            
-        except Exception as e:
-            print(f"DuckDuckGo instant answer error: {e}")
-            return {'success': False}
-    
     def extract_content(self, url: str, max_length: int = 2000) -> Dict:
         """
         Extract and clean content from a webpage for LLM consumption
@@ -277,9 +254,6 @@ class WebSearchLLM:
                     prompt += f"Title: {extract['title']}\n"
                     prompt += f"Content: {extract['content']}\n\n"
         
-        prompt += "## Instructions for LLM:\n"
-        prompt += "Based on the search results and extracted content above, please provide a summary to the query."
-        
         return prompt
     
     def comprehensive_search(self, query: str, extract_content: bool = True, 
@@ -297,11 +271,6 @@ class WebSearchLLM:
             'instant_answer': None,
             'llm_prompt': ""
         }
-        
-        # # Get instant answer
-        # print("Getting instant answer...")
-        # instant_answer = self.search_duckduckgo_instant(query)
-        # results['instant_answer'] = instant_answer
         
         # Perform regular search
         print("Performing web search...")
@@ -347,19 +316,12 @@ if __name__ == "__main__":
     # Example: Comprehensive search for LLM
     print("=== Comprehensive Search for LLM ===")
     comprehensive_result = searcher.comprehensive_search(
-        "geert wilders recent polls", 
+        "python", 
         extract_content=True, 
         include_wikipedia=True,
         include_news=False,
         num_results=5
     )
-    
-    # # Display instant answer
-    # if comprehensive_result['instant_answer'] and comprehensive_result['instant_answer'].get('success'):
-    #     print("\nInstant Answer:")
-    #     print(f"Title: {comprehensive_result['instant_answer']['title']}")
-    #     print(f"Content: {comprehensive_result['instant_answer']['snippet'][:200]}...")
-    #     print()
     
     print("\nSearch Results:")
     for i, result in enumerate(comprehensive_result['search_results'], 1):
