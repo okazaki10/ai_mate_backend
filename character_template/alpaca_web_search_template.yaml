@@ -7,6 +7,6 @@ CONTEXT: |-
   {SEARCH_RESULT}
 
   ## List of Action Categories and Triggers
-  [ACTION:SEARCH_AGAIN()] - If Search Query is unrelated to Search Result or Search Results is empty
+  [ACTION:SEARCH_AGAIN()] - If Search Results is empty or if Search Query is unrelated to Search Results
 
   ### Response:

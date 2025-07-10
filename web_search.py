@@ -21,6 +21,36 @@ class WebSearchLLM:
         })
         self.ddgs = DDGS()
     
+    def _contains_chinese_chars(self, text: str) -> bool:
+        """
+        Check if text contains Chinese characters
+        """
+        chinese_char_pattern = re.compile(r'[\u4e00-\u9fff]+')
+        chinese_chars = chinese_char_pattern.findall(text)
+        total_chinese_chars = sum(len(chars) for chars in chinese_chars)
+        total_chars = len(text.replace(' ', ''))
+        
+        # If more than 30% of characters are Chinese, consider it Chinese content
+        if total_chars > 0:
+            return (total_chinese_chars / total_chars) > 0.3
+        return False
+    
+    def _is_english_domain(self, url: str) -> bool:
+        """
+        Check if URL is likely from an English-language domain
+        """
+        english_tlds = ['.com', '.org', '.net', '.edu', '.gov', '.io', '.co.uk', '.au', '.ca']
+        chinese_domains = ['zhihu.com', 'baidu.com', 'weibo.com', 'sina.com.cn', 'qq.com', 'sohu.com', '163.com', 'csdn.net']
+        
+        url_lower = url.lower()
+        
+        # Check if it's a known Chinese domain
+        if any(domain in url_lower for domain in chinese_domains):
+            return False
+            
+        # Check if it has English TLD
+        return any(tld in url_lower for tld in english_tlds)
+    
     def clean_unicode_content(self, text: str) -> str:
         """
         Clean problematic Unicode characters that cause encoding issues
@@ -48,42 +78,76 @@ class WebSearchLLM:
         
         return text
     
-    def search_duckduckgo(self, query: str, num_results: int = 10, region: str = 'us-en') -> List[Dict]:
+    def search_duckduckgo(self, query: str, num_results: int = 10, region: str = 'us-en', 
+                         filter_languages: List[str] = None, exclude_domains: List[str] = None) -> List[Dict]:
         """
-        Search DuckDuckGo using the ddgs library
+        Search DuckDuckGo using the ddgs library with language and domain filtering
         """
         try:
             results = []
             
+            # Default exclude Chinese domains if not specified
+            if exclude_domains is None:
+                exclude_domains = ['zhihu.com', 'baidu.com', 'weibo.com', 'sina.com.cn', 'qq.com', 'sohu.com', '163.com']
+            
+            # Add English preference to query if needed
+            modified_query = query
+            # if 'site:' not in query.lower():
+            #     # Add language preference hints
+            #     modified_query = f"{query} site:*.com OR site:*.org OR site:*.net"
+            
             # Use the text search method from ddgs
             search_results = self.ddgs.text(
-                keywords=query,
+                keywords=modified_query,
                 region=region,
                 safesearch='moderate',
                 timelimit=None,
-                max_results=num_results
+                max_results=num_results * 2  # Get more results to filter
             )
             
+            filtered_results = []
             for result in search_results:
-                results.append({
-                    'title': result.get('title', ''),
-                    'url': result.get('href', ''),
-                    'snippet': result.get('body', ''),
+                url = result.get('href', '')
+                title = result.get('title', '')
+                snippet = result.get('body', '')
+                
+                # Filter out unwanted domains
+                if exclude_domains and any(domain in url.lower() for domain in exclude_domains):
+                    continue
+                
+                # Filter out results with predominantly Chinese characters
+                if filter_languages and 'zh' not in filter_languages:
+                    if self._contains_chinese_chars(title + snippet):
+                        continue
+                
+                filtered_results.append({
+                    'title': title,
+                    'url': url,
+                    'snippet': snippet,
                     'source': 'duckduckgo'
                 })
+                
+                # Stop when we have enough results
+                if len(filtered_results) >= num_results:
+                    break
             
-            return results
+            return filtered_results
             
         except Exception as e:
             print(f"DuckDuckGo search error: {e}")
             return []
     
-    def search_duckduckgo_news(self, query: str, num_results: int = 10, region: str = 'us-en') -> List[Dict]:
+    def search_duckduckgo_news(self, query: str, num_results: int = 10, region: str = 'us-en',
+                              exclude_domains: List[str] = None) -> List[Dict]:
         """
-        Search DuckDuckGo news using the ddgs library
+        Search DuckDuckGo news using the ddgs library with domain filtering
         """
         try:
             results = []
+            
+            # Default exclude Chinese domains if not specified
+            if exclude_domains is None:
+                exclude_domains = ['zhihu.com', 'baidu.com', 'weibo.com', 'sina.com.cn', 'qq.com', 'sohu.com', '163.com']
             
             # Use the news search method from ddgs
             news_results = self.ddgs.news(
@@ -91,23 +155,63 @@ class WebSearchLLM:
                 region=region,
                 safesearch='moderate',
                 timelimit='m',  # Last month
-                max_results=num_results
+                max_results=num_results * 2  # Get more results to filter
             )
             
+            filtered_results = []
             for result in news_results:
-                results.append({
-                    'title': result.get('title', ''),
-                    'url': result.get('url', ''),
-                    'snippet': result.get('body', ''),
+                url = result.get('url', '')
+                title = result.get('title', '')
+                snippet = result.get('body', '')
+                
+                # Filter out unwanted domains
+                if exclude_domains and any(domain in url.lower() for domain in exclude_domains):
+                    continue
+                
+                # Filter out results with predominantly Chinese characters
+                if self._contains_chinese_chars(title + snippet):
+                    continue
+                
+                filtered_results.append({
+                    'title': title,
+                    'url': url,
+                    'snippet': snippet,
                     'date': result.get('date', ''),
                     'source': 'duckduckgo_news'
                 })
+                
+                # Stop when we have enough results
+                if len(filtered_results) >= num_results:
+                    break
             
-            return results
+            return filtered_results
             
         except Exception as e:
             print(f"DuckDuckGo news search error: {e}")
             return []
+    
+    # def search_duckduckgo_instant(self, query: str) -> Dict:
+    #     """
+    #     Get DuckDuckGo instant answer
+    #     """
+    #     try:
+    #         # Use the answers method from ddgs
+    #         answer_results = self.ddgs.answers(query)
+            
+    #         for result in answer_results:
+    #             return {
+    #                 'title': result.get('text', ''),
+    #                 'url': result.get('url', ''),
+    #                 'snippet': result.get('text', ''),
+    #                 'source': 'duckduckgo_instant',
+    #                 'success': True
+    #             }
+            
+    #         return {'success': False}
+            
+    #     except Exception as e:
+    #         print(f"DuckDuckGo instant answer error: {e}")
+    #         return {'success': False}
     
     def extract_content(self, url: str, max_length: int = 2000) -> Dict:
         """
@@ -229,21 +333,24 @@ class WebSearchLLM:
         """
         prompt = f"# Search Query: {query}\n\n"
         
-        # Add instant answer if available
-        if instant_answer and instant_answer.get('success'):
-            prompt += "## Instant Answer:\n\n"
-            prompt += f"**{instant_answer['title']}**\n"
-            prompt += f"{instant_answer['snippet']}\n\n"
+        # # Add instant answer if available
+        # if instant_answer and instant_answer.get('success'):
+        #     prompt += "## Instant Answer:\n\n"
+        #     prompt += f"**{instant_answer['title']}**\n"
+        #     prompt += f"{instant_answer['snippet']}\n\n"
         
         # Add search results
         prompt += "## Search Results:\n\n"
-        for i, result in enumerate(search_results, 1):
-            prompt += f"**Result {i}:**\n"
-            prompt += f"- Title: {result['title']}\n"
-            prompt += f"- Snippet: {result['snippet']}\n"
-            if result.get('date'):
-                prompt += f"- Date: {result['date']}\n"
-            prompt += f"- Source: {result['source']}\n\n"
+        if search_results:
+            for i, result in enumerate(search_results, 1):
+                prompt += f"**Result {i}:**\n"
+                prompt += f"- Title: {result['title']}\n"
+                prompt += f"- Snippet: {result['snippet']}\n"
+                if result.get('date'):
+                    prompt += f"- Date: {result['date']}\n"
+                prompt += f"- Source: {result['source']}\n\n"
+        else:
+            prompt += "SEARCH RESULTS IS EMPTY"
         
         # Add extracted content if available
         if content_extracts:
@@ -258,9 +365,10 @@ class WebSearchLLM:
     
     def comprehensive_search(self, query: str, extract_content: bool = True, 
                            include_wikipedia: bool = True, include_news: bool = False,
-                           num_results: int = 5, region: str = 'us-en') -> Dict:
+                           num_results: int = 5, region: str = 'us-en',
+                           filter_chinese: bool = True, custom_exclude_domains: List[str] = None) -> Dict:
         """
-        Perform comprehensive search and content extraction
+        Perform comprehensive search and content extraction with language filtering
         """
         results = {
             'query': query,
@@ -272,15 +380,31 @@ class WebSearchLLM:
             'llm_prompt': ""
         }
         
+        # Set up domain exclusion
+        exclude_domains = custom_exclude_domains
+        if filter_chinese and exclude_domains is None:
+            exclude_domains = ['zhihu.com', 'baidu.com', 'weibo.com', 'sina.com.cn', 'qq.com', 'sohu.com', '163.com', 'csdn.net']
+        
+        # # Get instant answer
+        # print("Getting instant answer...")
+        # instant_answer = self.search_duckduckgo_instant(query)
+        # results['instant_answer'] = instant_answer
+        
         # Perform regular search
         print("Performing web search...")
-        search_results = self.search_duckduckgo(query, num_results, region)
+        search_results = self.search_duckduckgo(
+            query, num_results, region, 
+            filter_languages=['en'] if filter_chinese else None,
+            exclude_domains=exclude_domains
+        )
         results['search_results'] = search_results
         
         # Perform news search if requested
         if include_news:
             print("Performing news search...")
-            news_results = self.search_duckduckgo_news(query, num_results, region)
+            news_results = self.search_duckduckgo_news(
+                query, num_results, region, exclude_domains
+            )
             results['news_results'] = news_results
         
         # Extract content from top results
@@ -313,15 +437,34 @@ if __name__ == "__main__":
     # Initialize the search tool
     searcher = WebSearchLLM()
     
-    # Example: Comprehensive search for LLM
-    print("=== Comprehensive Search for LLM ===")
+    # Example: Comprehensive search for LLM with Chinese filtering
+    print("=== Comprehensive Search for LLM (English Only) ===")
     comprehensive_result = searcher.comprehensive_search(
-        "python", 
+        "python programming best practices", 
         extract_content=True, 
         include_wikipedia=True,
         include_news=False,
-        num_results=5
+        num_results=5,
+        filter_chinese=True  # This will filter out Chinese sites
     )
+    
+    # Example: Search without Chinese filtering
+    print("\n=== Search without Chinese filtering ===")
+    comprehensive_result_unfiltered = searcher.comprehensive_search(
+        "machine learning algorithms", 
+        extract_content=False, 
+        include_wikipedia=False,
+        include_news=False,
+        num_results=3,
+        filter_chinese=False  # This allows Chinese sites
+    )
+    
+    # # Display instant answer
+    # if comprehensive_result['instant_answer'] and comprehensive_result['instant_answer'].get('success'):
+    #     print("\nInstant Answer:")
+    #     print(f"Title: {comprehensive_result['instant_answer']['title']}")
+    #     print(f"Content: {comprehensive_result['instant_answer']['snippet'][:200]}...")
+    #     print()
     
     print("\nSearch Results:")
     for i, result in enumerate(comprehensive_result['search_results'], 1):

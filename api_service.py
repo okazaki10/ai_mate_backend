@@ -555,7 +555,7 @@ async def generate_text(request: GenerateRequest):
 
     promptTokens = 0
     newPrompt = ""
-    newOutput = ""
+    newOutput = "Result is empty"
     if not request.isWebSearch:
         chat.messages.append(chatTemplate)
         chatText = "\n".join(convertChatDialogue(chat.messages))
@@ -587,6 +587,7 @@ async def generate_text(request: GenerateRequest):
                 webSearch = WebSearchLLM()
                 searchResult = webSearch.comprehensive_search(request.prompt)
                 newPrompt = replaceContextWebSearch(webSearchTemplate, searchResult["llm_prompt"])
+                print(f"web search prompt {newPrompt}")
                 output = generateOutput(newPrompt, request)
                 newOutput = output['choices'][0]['text']
                 print(f"output web search {newOutput}")
