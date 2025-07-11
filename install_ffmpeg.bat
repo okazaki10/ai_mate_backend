@@ -18,8 +18,6 @@ choco install ffmpeg -y
 
 if errorlevel 1 (
     echo FFmpeg installation failed.
-    pause
-    exit /b 1
 )
 
 :: Refresh environment to update PATH
@@ -44,4 +42,50 @@ if errorlevel 1 (
 echo.
 echo Installation complete!
 echo You can now use 'ffmpeg' and 'ffprobe' from any command prompt.
+
+choco install git -y
+
+if errorlevel 1 (
+    echo git installation failed.
+)
+
+:: Refresh environment to update PATH
+call refreshenv
+
+echo.
+echo Verifying installation...
+git -v >nul 2>&1
+if errorlevel 1 (
+    echo git not found in PATH. Please restart your command prompt.
+) else (
+    echo ✓ git installed successfully!
+)
+
+echo.
+echo Installation complete!
+echo You can now use git
+
+choco install git-lfs.install -y
+
+if errorlevel 1 (
+    echo git installation failed.
+)
+
+:: Refresh environment to update PATH
+call refreshenv
+
+echo.
+echo Verifying installation...
+git -v >nul 2>&1
+if errorlevel 1 (
+    echo git not found in PATH. Please restart your command prompt.
+) else (
+    echo ✓ git installed successfully!
+)
+
+echo.
+echo Installation complete!
+echo You can now use git lfs
+
+start install_llama_cpp_python.bat
 pause

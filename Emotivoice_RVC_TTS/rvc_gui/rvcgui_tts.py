@@ -79,7 +79,7 @@ is_half = config.is_half
 def load_hubert():
     global hubert_model
     models, _, _ = checkpoint_utils.load_model_ensemble_and_task(
-        [f"{RVC_DIR}/hubert_base.pt"],
+        [f"{RVC_DIR}/models/hubert_base.pt"],
         suffix="",
     )
     hubert_model = models[0]
