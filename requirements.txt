@@ -59,7 +59,9 @@ git+https://github.com/openai/whisper.git
 # https://github.com/SYSTRAN/faster-whisper/discussions/715#discussioncomment-10903540
 yt-dlp
 audio-separator[gpu]
-requests 
+requests
+zipfile
+shutil 
 beautifulsoup4
 ddgs
 
