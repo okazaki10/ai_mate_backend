@@ -9,5 +9,5 @@ git lfs clone https://huggingface.co/okazaki10/hubert_base %DIR%\Emotivoice_RVC_
 
 git lfs clone https://huggingface.co/okazaki10/silicon_maid_7b_gguf %DIR%\models
 
-echo done add models
+echo done add models, if you encountered error, open add_models.bat again, if you fail at download, please delete that folder and open add_models.bat again
 %DIR%\installer_files\env\python ai_mate_client_installer.py

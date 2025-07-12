@@ -117,6 +117,7 @@ def move_bin_files(extract_path, final_path):
 
 def downloadFiles(url, filename, final_path, isDeleteTemp = True):
     final_path = os.path.join(script_dir, final_path)
+    filename = os.path.join(script_dir, filename)
     
     filepath = Path(final_path)
     if filepath.exists():
