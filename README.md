@@ -1,5 +1,5 @@
 # AI MATE BACKEND
-this is backend service for ai mate, ai mate is a virtual / personal assistant like desktop mate with AI that can sing, has emotion, multiple languages, and completely free!
+this is backend service for ai mate, ai mate is a virtual / personal assistant like desktop mate with AI that can sing, web search, has emotion, multiple languages, and completely free!
 - video example and how to install https://www.youtube.com/watch?v=Bz-DD75EHTk
 - for ai mate client https://github.com/okazaki10/ai_mate_client
 # INSTALLING
@@ -27,6 +27,10 @@ just open start_ai_mate.bat
 - say "can you sing?"
 - and then say "this is the link https://youtu.be/EXAMPLE?si=EXAMPLE"
 - basically put the youtube link from share button
+
+## WEB SEARCH
+- say "do you know about SEARCH_QUERY?"
+- change SEARCH_QUERY to your search query
   
 # ADDING NEW CHARACTER
 - from menu, click "character customization" button
