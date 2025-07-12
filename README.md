@@ -2,6 +2,7 @@
 this is backend service for ai mate, ai mate is a virtual / personal assistant like desktop mate with AI that can sing, web search, has emotion, multiple languages, and completely free!
 - video example and how to install https://www.youtube.com/watch?v=Bz-DD75EHTk
 - for ai mate client https://github.com/okazaki10/ai_mate_client
+
 # INSTALLING
 ## REQUIREMENTS
 - NVIDIA GPU
@@ -14,6 +15,7 @@ this is backend service for ai mate, ai mate is a virtual / personal assistant l
 - open install_ai_mate.bat
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
 - it will automatically installing ffmpeg, git, and git-lfs through chocolatey, please run as administrator
+
 # RUNNING
 just open start_ai_mate.bat
 - also make sure that your current microphone that you are using is set to default in control panel -> sound -> recording tab
