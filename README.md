@@ -10,7 +10,7 @@ this is backend service for ai mate, ai mate is a virtual / personal assistant l
 - Windows 10 or above OS
 ## INSTALLATION
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
-- clone this repository or download from release and then extract zip file
+- clone this repository or download from release https://github.com/okazaki10/ai_mate_backend/releases/download/v.1.0/ai_mate_backend.zip and then extract zip file
 - go to ai_mate_backend folder
 - open install_ai_mate.bat
 - installing llama cpp python could take up to 30 minutes depending on your cpu and gpu, basically compiling to your gpu architecture
