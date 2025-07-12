@@ -1,2 +1,3 @@
 git pull
-start update_requirements_administrator
+SET DIR=%~dp0%
+start %DIR%\update_requirements.bat
