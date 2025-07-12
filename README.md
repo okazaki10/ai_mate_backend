@@ -1,5 +1,5 @@
 # AI MATE BACKEND
-this is backend service for ai mate, ai mate is a virtual / personal assistant like desktop mate with AI that can sing, web search, has emotion, multiple languages, and completely free!
+this is backend service for ai mate, AI MATE is a virtual / personal assistant like desktop mate with AI that can sing, web search, has emotion, multiple languages, and completely free!
 - video example https://www.youtube.com/watch?v=Bz-DD75EHTk
 - for ai mate client https://github.com/okazaki10/ai_mate_client
 
