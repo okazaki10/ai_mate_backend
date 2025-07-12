@@ -7,7 +7,7 @@ this is backend service for ai mate, ai mate is a virtual / personal assistant l
 - NVIDIA GPU
 - GPU with 8 GB of VRAM or above is recommended
 - Windows 10 or above OS
-## INSTALL FROM DOWNLOAD
+## INSTALLATION
 - download cuda 12.8 from https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda_12.8.0_571.96_windows.exe
 - clone this repository or download from release and then extract zip file
 - go to ai_mate_backend folder
