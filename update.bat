@@ -1,1 +1,2 @@
 git pull
+update_requirements.bat
