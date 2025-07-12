@@ -607,6 +607,8 @@ async def generate_text(request: GenerateRequest):
         with open('llm_prompt.txt', 'w', encoding='utf-8') as f:
             f.write(searchResult['llm_prompt'])
             print("LLM prompt saved to llm_prompt.txt")
+            
+        newOutput = script.tts_preprocessor.removeParentheses(newOutput)
     
     print(f"responsenya {newOutput}")
 
