@@ -1,2 +1,2 @@
 git pull
-update_requirements.bat
+start update_requirements_administrator

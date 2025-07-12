@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 # Environment
-script_dir = os.getcwd()
+script_dir = Path(__file__).resolve().parent
 conda_env_path = os.path.join(script_dir, "installer_files", "env")
 python_path = os.path.join(script_dir, "installer_files", "env", "python")
 
@@ -123,6 +123,8 @@ def downloadFiles(url, filename, final_path, isDeleteTemp = True):
         print(f"path exist {filepath}")
         if isDeleteTemp:
             shutil.rmtree(filepath)
+        else:
+            return
     
     print("Download")
     print("=" * 40)
