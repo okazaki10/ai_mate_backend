@@ -4,4 +4,4 @@ SET DIR=%~dp0%
 %DIR%\installer_files\env\python -m pip uninstall -y onnxruntime onnxruntime-gpu
 %DIR%\installer_files\env\python -m pip install onnxruntime-gpu
 echo done installing depedency, if you encountered error, open install_depedency.bat again
-start %DIR%\install_fairseq.bat
+%DIR%\install_fairseq.bat

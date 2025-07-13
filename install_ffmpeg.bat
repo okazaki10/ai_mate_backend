@@ -90,5 +90,5 @@ echo You can now use git lfs
 :: Refresh environment to update PATH
 call refreshenv
 
-start install_llama_cpp_python.bat
+install_llama_cpp_python.bat
 pause
