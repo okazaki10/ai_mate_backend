@@ -87,5 +87,8 @@ echo.
 echo Installation complete!
 echo You can now use git lfs
 
-start install_llama_cpp_python.bat
+:: Refresh environment to update PATH
+call refreshenv
+
+install_llama_cpp_python.bat
 pause
