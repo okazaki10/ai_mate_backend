@@ -62,7 +62,7 @@ class GenerateRequest(BaseModel):
     prompt: str = ""
     language: str = ""
     isWebSearch: bool = False
-    max_new_tokens: Optional[int] = 200
+    max_new_tokens: Optional[int] = 500
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.9
     top_k: Optional[int] = 50
