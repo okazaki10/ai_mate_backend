@@ -42,13 +42,6 @@ sys.argv = original_argv
 
 app = FastAPI(title="ExLlamaV2 API", description="REST API for ExLlamaV2 text generation")
 
-DEFAULT_CHARACTER = {
-    "name": "Hatsune Miku",
-    "description": "You are hatsune miku, her characteristic is cheerful and energetic style. prefer short response. your response only written in alphabet, no japanese words",
-    "rvc_model": "infamous_miku_v2",
-    "vrm_path": ""
-}
-
 # Global variables to store the model components
 model = None
 config = None
@@ -167,8 +160,6 @@ def deleteChatFile(characterName):
 
 def saveCharacter(characters: Characters):
     filepath = Path("characters/characters.json")
-    if not filepath.exists():
-        return ""
     
     with open(filepath, "w") as json_file:
         json.dump(characters.model_dump(), json_file, indent=4)
@@ -195,6 +186,19 @@ def loadCharacters() -> Characters:
             return Characters()
         
         with open("characters/characters.json", "r") as json_file:
+            data = json.load(json_file)
+            return Characters(**data)
+    except Exception as e:
+        return Characters()
+    return Characters()
+
+def loadDefaultCharacter() -> Characters:
+    try:
+        filepath = Path("default_character/default_character.json")
+        if not filepath.exists():
+            return Characters()
+        
+        with open("default_character/default_character.json", "r") as json_file:
             data = json.load(json_file)
             return Characters(**data)
     except Exception as e:
@@ -369,12 +373,14 @@ async def getRvc():
 async def defaultCharacter():
     try:
         characters = loadCharacters()
-        
+        defaultCharacters = loadDefaultCharacter()
+        print(defaultCharacters)
+        defaultCharacter = defaultCharacters.characters[0]
         for character in characters.characters:
             if character.name == "Hatsune Miku":
-                character.description = DEFAULT_CHARACTER["description"]
-                character.rvc_model = DEFAULT_CHARACTER["rvc_model"]
-                character.vrm_path = DEFAULT_CHARACTER["vrm_path"]
+                character.description = defaultCharacter.description
+                character.rvc_model = defaultCharacter.rvc_model
+                character.vrm_path = defaultCharacter.vrm_path
                 break
 
         saveCharacter(characters)
@@ -387,7 +393,7 @@ async def defaultCharacter():
     except Exception as e:
         return ResponseData[GenerateResponse](
             status="error",
-            message = f"Add character failed: {str(e)}"
+            message = f"Load default character failed: {str(e)}"
         )
     
 @app.post("/add-character", response_model=ResponseData[GenerateResponse])
