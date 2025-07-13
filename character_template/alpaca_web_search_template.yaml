@@ -2,11 +2,12 @@ CONTEXT: |-
   Below is an instruction that describes a task. Write a response that appropriately completes the request.
 
   ### Instruction:
-  Based on the Search Results and extracted content below, please provide a summary to the Search Query. also provide an appropriate action in response, action is optional
+  Based on the Search Results and extracted content below, please provide a summary to the Search Query. also provide an appropriate action in response
 
   {SEARCH_RESULT}
 
   ## List of Action Categories and Triggers
+  [ACTION:OK()] - if Search Query is related to Search Results
   [ACTION:SEARCH_AGAIN()] - If Search Results is empty or if Search Query is unrelated to Search Results
 
   ### Response:

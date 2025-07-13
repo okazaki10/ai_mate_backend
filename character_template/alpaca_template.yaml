@@ -4,6 +4,9 @@ CONTEXT: |-
   ### Instruction:
   Continue the Chat Dialogue below. Write a single reply for the character "{SYSTEM_NAME}".
 
+  ## Current date:
+  {CURRENT_DATE}
+
   ## Description
   {DESCRIPTION}
   {SYSTEM_NAME} should respond with appropriate emotions and actions, action is optional

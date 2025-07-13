@@ -21,6 +21,7 @@ import argparse
 import subprocess
 import sys
 from web_search import WebSearchLLM
+import datetime
 
 # Save original argv
 original_argv = sys.argv[:]
@@ -307,6 +308,7 @@ def replaceContextPrompt(characterTemplate, character: Character, chatText, user
     newPrompt = newPrompt.replace(r"{SYSTEM_NAME}", character.name)
     newPrompt = newPrompt.replace(r"{DESCRIPTION}", character.description)
     newPrompt = newPrompt.replace(r"{USER_NAME}", userName)
+    newPrompt = newPrompt.replace(r"{CURRENT_DATE}", datetime.datetime.now().strftime("%A %Y-%m-%d %H:%M:%S"))
     return newPrompt
 
 def replaceContextWebSearch(characterTemplate, chatText):
@@ -530,7 +532,7 @@ def generateOutput(newPrompt, request:GenerateRequest):
     return llm_model(
         newPrompt,
         max_tokens=request.max_new_tokens,
-        stop=["</s>",f"{request.name}:","#","Search Result:"],
+        stop=["</s>",f"{request.character_name}:",f"{request.name}:","#","Search Result:"],
         echo=False  # Don't include the prompt in the response
     )
 
@@ -609,6 +611,7 @@ async def generate_text(request: GenerateRequest):
             print("LLM prompt saved to llm_prompt.txt")
             
         newOutput = script.tts_preprocessor.removeParentheses(newOutput)
+        newOutput = newOutput.replace("*","-")
     
     print(f"responsenya {newOutput}")
 
