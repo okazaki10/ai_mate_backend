@@ -1,6 +1,8 @@
 
 Emotivoice_RVC_TTS/outputs/
-# Python
+Emotivoice_RVC_TTS/models/hifigan/__pycache__/
+Emotivoice_RVC_TTS/models/prompt_tts_modified/__pycache__/
+Emotivoice_RVC_TTS/models/prompt_tts_modified/modules/__pycache__/
 Emotivoice_RVC_TTS/__pycache__/
 Emotivoice_RVC_TTS/*.pyc
 Emotivoice_RVC_TTS/*.pyo
@@ -12,7 +14,7 @@ Emotivoice_RVC_TTS/EmotiVoice/outputs/
 __pycache__/
 installer_files/
 chat_history/
-models/
+models
 rvc_models/
 rvc_music_output/
 music_separated/
