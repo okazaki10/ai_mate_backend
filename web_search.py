@@ -98,9 +98,9 @@ class WebSearchLLM:
             
             # Use the text search method from ddgs
             search_results = self.ddgs.text(
-                keywords=modified_query,
+                modified_query,
                 region=region,
-                safesearch='moderate',
+                safesearch='off',
                 timelimit=None,
                 max_results=num_results * 2  # Get more results to filter
             )
@@ -151,10 +151,10 @@ class WebSearchLLM:
             
             # Use the news search method from ddgs
             news_results = self.ddgs.news(
-                keywords=query,
+                query,
                 region=region,
-                safesearch='moderate',
-                timelimit='m',  # Last month
+                safesearch='off',
+                timelimit=None,  # Last month
                 max_results=num_results * 2  # Get more results to filter
             )
             
