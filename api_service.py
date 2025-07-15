@@ -465,8 +465,8 @@ def load_llama_cpp_model():
     global llm_model, sequenceLength
 
     # Check if model path exists
-    os.makedirs("models", exist_ok=True)
-    modelDir = os.path.join("models")
+    os.makedirs("llm_models", exist_ok=True)
+    modelDir = os.path.join("llm_models")
     modelPath = os.path.join(modelDir,findFirstGGUF(modelDir))
 
     if not os.path.exists(modelPath):

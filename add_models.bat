@@ -7,7 +7,7 @@ git lfs clone --depth 1 https://www.modelscope.cn/syq163/outputs.git %DIR%\Emoti
 
 git lfs clone https://huggingface.co/okazaki10/hubert_base %DIR%\Emotivoice_RVC_TTS\rvc_gui\models
 
-git lfs clone https://huggingface.co/okazaki10/silicon_maid_7b_gguf %DIR%\models
+git lfs clone https://huggingface.co/okazaki10/silicon_maid_7b_gguf %DIR%\llm_models
 
 echo done add models, if you encountered error, open add_models.bat again, if you fail at download, please delete that folder and open add_models.bat again
 %DIR%\installer_files\env\python ai_mate_client_installer.py
