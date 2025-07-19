@@ -507,7 +507,7 @@ def output_modifier(emotionPrompt: str = "",string: str = "",rvc_model: str = ""
             return string
 
         out_dir_root = params['output_dir'] if params['output_dir'] is not None and Path(params['output_dir']).is_dir() \
-            else 'extensions/Emotivoice_RVC_TTS/outputs'
+            else f"{EMOTIVOICE_ROOT}/outputs"
 
         output_dir = Path(out_dir_root).joinpath('parts')
         if not output_dir.is_dir():

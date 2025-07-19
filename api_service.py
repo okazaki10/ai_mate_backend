@@ -538,7 +538,7 @@ def generateOutput(newPrompt, request:GenerateRequest):
     return llm_model(
         newPrompt,
         max_tokens=request.max_new_tokens,
-        stop=["</s>",f"{request.character_name}:",f"{request.name}:","#","Search Result:"],
+        stop=["</s>",f"{request.character_name}:",f"{request.name}:",f"{request.name.capitalize()}:","#","Search Result:"],
         echo=False  # Don't include the prompt in the response
     )
 
