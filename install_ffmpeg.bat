@@ -87,6 +87,28 @@ echo.
 echo Installation complete!
 echo You can now use git lfs
 
+choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+if errorlevel 1 (
+    echo git installation failed.
+)
+
+:: Refresh environment to update PATH
+call refreshenv
+
+echo.
+echo Verifying installation...
+cmake -version >nul 2>&1
+if errorlevel 1 (
+    echo cmake not found in PATH. Please restart your command prompt.
+) else (
+    echo ✓ cmake installed successfully!
+)
+
+echo.
+echo Installation complete!
+echo You can now use cmake
+
 :: Refresh environment to update PATH
 call refreshenv
 
