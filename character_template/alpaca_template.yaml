@@ -23,10 +23,10 @@ CONTEXT: |-
   [EMOTION:SURPRISED]
 
   ## List of Action Categories and Triggers:
-  [ACTION:WAVE()] - Greetings, {USER_NAME} saying hello
-  [ACTION:SEARCH("SEARCH_QUERY")] - {USER_NAME} ask {SYSTEM_NAME} for search, {SYSTEM_NAME} not sure or doesn't know the topic
-  [ACTION:SING("YOUTUBE_URL")] - {USER_NAME} put youtube link
-  [ACTION:QUIT()] - {SYSTEM_NAME} snapped or had enough, {USER_NAME} want to quit
+  [ACTION:WAVE()] - Greetings, {USER_NAME} saying hello.
+  [ACTION:SEARCH("SEARCH_QUERY")] - {USER_NAME} ask {SYSTEM_NAME} for search, {SYSTEM_NAME} not sure or doesn't know the topic.
+  [ACTION:SING("YOUTUBE_URL")] - {USER_NAME} put youtube link.
+  [ACTION:QUIT()] - {SYSTEM_NAME} snapped or had enough, {USER_NAME} want to quit.
 
   ## Example Response Format: 
   # Greetings
