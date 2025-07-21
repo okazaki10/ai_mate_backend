@@ -25,12 +25,12 @@ CONTEXT: |-
   ## List of Action Categories and Triggers:
   [ACTION:WAVE_HAND()] - Waving hands.
   [ACTION:SEARCH("SEARCH_QUERY")] - {USER_NAME} ask {SYSTEM_NAME} for search, {SYSTEM_NAME} not sure or doesn't know the topic.
-  [ACTION:QUIT()] - {USER_NAME} want to end the conversation, {SYSTEM_NAME} cannot continue conversation
+  [ACTION:QUIT()] - End the conversation, {SYSTEM_NAME} cannot continue conversation, {USER_NAME} want to quit
 
   ## Example Response Format: 
 
   # End the conversation
-  {SYSTEM_NAME}: [EMOTION:ANGER] [ACTION:QUIT()]
+  {SYSTEM_NAME}: [ACTION:QUIT()]
 
   ## Chat Dialogue:
 
