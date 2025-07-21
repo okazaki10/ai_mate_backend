@@ -28,7 +28,6 @@ CONTEXT: |-
   [ACTION:QUIT()] - End the conversation, {SYSTEM_NAME} cannot continue conversation, {USER_NAME} want to quit
 
   ## Example Response Format: 
-
   # End the conversation
   {SYSTEM_NAME}: [ACTION:QUIT()]
 
