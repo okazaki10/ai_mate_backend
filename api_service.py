@@ -123,6 +123,9 @@ class ModelInfo(BaseModel):
     path: Optional[str] = None
     max_seq_len: Optional[int] = None
 
+class UserConfig(BaseModel):
+    language: str = "en"
+
 def download_if_not_exists(resource_name):
     try:
         nltk.data.find(resource_name)
@@ -178,6 +181,32 @@ def loadChat(characterName) -> ChatTemplates:
     except Exception as e:
         return ChatTemplates()
     return ChatTemplates()
+
+def loadConfig() -> UserConfig:
+    try:
+        os.makedirs("user_config", exist_ok=True)
+
+        filepath = Path(f"user_config/user_config.json")
+        if not filepath.exists():
+            with open(filepath, "w") as json_file:
+                json.dump(UserConfig().model_dump(), json_file, indent=4)
+        
+        with open(filepath, "r") as json_file:
+            data = json.load(json_file)
+            return UserConfig(**data)
+    except Exception as e:
+        return UserConfig()
+    return UserConfig()
+
+def saveConfig(config: UserConfig) -> UserConfig:
+    try:
+        filepath = Path(f"user_config/user_config.json")
+
+        with open(filepath, "w") as json_file:
+            json.dump(config.model_dump(), json_file, indent=4)
+    except Exception as e:
+        return UserConfig()
+    return UserConfig()
 
 def loadCharacters() -> Characters:
     try:
@@ -426,6 +455,25 @@ async def addCharacter(request: Character):
             message = f"Add character failed: {str(e)}"
         )
 
+@app.post("/set-language", response_model=ResponseData[str])
+async def setLanguage(request: UserConfig):
+    try:
+        config = loadConfig()
+        
+        config.language = request.language
+
+        saveConfig(config)
+
+        return ResponseData[str](
+            status="success",
+            message = ""
+        )
+    except Exception as e:
+        return ResponseData[str](
+            status="error",
+            message = f"Add character failed: {str(e)}"
+        )
+    
 @app.delete("/delete-character", response_model=ResponseData[GenerateResponse])
 async def deleteCharacter(request: Character):
     try:
