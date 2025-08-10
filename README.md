@@ -1,11 +1,10 @@
+<img width="256" height="256" alt="Screenshot 2025-08-10 212838" src="https://github.com/user-attachments/assets/143c7aeb-caa9-489a-8a70-f8ffaac735ed" />
+
 # AI MATE BACKEND
 this is backend service for ai mate, AI MATE is a virtual / personal assistant like desktop mate with AI that can sing, web search, has emotion, multiple languages, and completely free!
 - example video https://youtu.be/DeVmBs-BvK8
 - for ai mate client https://github.com/okazaki10/ai_mate_client
-
-<img width="1026" height="800" alt="Screenshot 2025-08-10 212838" src="https://github.com/user-attachments/assets/143c7aeb-caa9-489a-8a70-f8ffaac735ed" />
-
-
+  
 # INSTALLING
 ## REQUIREMENTS
 - NVIDIA GPU
