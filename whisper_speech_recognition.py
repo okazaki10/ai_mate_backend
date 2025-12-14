@@ -48,8 +48,7 @@ class WebSocketSpeechRecognizer:
     def setup_whisper_model(self):
         self.audio_model = WhisperModel(
             "large-v3-turbo", 
-            device="cuda", 
-            compute_type="int8"
+            device="cuda"
         )
 
     def loadConfig(self) -> UserConfig:
