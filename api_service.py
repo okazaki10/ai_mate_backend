@@ -22,6 +22,7 @@ import subprocess
 import sys
 from web_search import WebSearchLLM
 import datetime
+import numpy as np
 
 # Save original argv
 original_argv = sys.argv[:]
@@ -566,12 +567,21 @@ async def generate_text(request: RequestSong):
     y, sr = librosa.load(outputPathFull)
 
     # Estimate tempo (BPM)
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    tempoResult, _ = librosa.beat.beat_track(y=y, sr=sr)
     
+    # 1. Access the first element
+    tempo_data = tempoResult[0]
+
+    # 2. Convert to float (handles scalar or 1-element array)
+    if isinstance(tempo_data, np.ndarray):
+        # .item() converts a 0-d or 1-element array to a Python scalar
+        tempo = float(tempo_data.item()) 
+    else:
+        tempo = float(tempo_data)
+
     responseSong = ResponseSong( 
         title=title,
         bpm=tempo,
-        character_name=character.name,
         base64_audio_vocal=base64_audio_vocal,
         base64_audio_instrument=base64_audio_instrument
     )
