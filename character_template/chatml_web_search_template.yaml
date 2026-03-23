@@ -1,0 +1,16 @@
+CONTEXT: |-
+  [INST]
+  Based on the Search Results and extracted content below, please provide a summary to the Search Query. also provide an action in response
+
+  {SEARCH_RESULT}
+
+  [AVAILABLE_TOOLS]
+
+  # List of Action Categories and Triggers
+  [ACTION:OK()] - if Search Query is related to Search Results
+  [ACTION:SEARCH_AGAIN()] - If Search Results is empty or if Search Query is unrelated to Search Results
+
+  [/AVAILABLE_TOOLS]
+
+  # Response:
+  [/INST]

@@ -74,6 +74,9 @@ class RequestSong(BaseModel):
     character_name: str = ""
     url: str = ""
 
+class RequestModel(BaseModel):
+    model_path: str = ""
+
 class Character(BaseModel):
     name: str = ""
     description: str = ""
@@ -126,6 +129,7 @@ class ModelInfo(BaseModel):
 
 class UserConfig(BaseModel):
     language: str = "en"
+    model_path: str = ""
 
 def download_if_not_exists(resource_name):
     try:
@@ -137,6 +141,9 @@ def download_if_not_exists(resource_name):
 
 def loadCharacterTemplate():
     filepath = Path('character_template/alpaca_template.yaml')
+    template = llm_model.metadata.get("tokenizer.chat_template","")
+    if template.find("<|im_start|>") >= 0:
+        filepath = Path('character_template/chatml_template.yaml')
     if not filepath.exists():
         return ""
 
@@ -145,6 +152,9 @@ def loadCharacterTemplate():
 
 def loadWebSearchTemplate():
     filepath = Path('character_template/alpaca_web_search_template.yaml')
+    template = llm_model.metadata.get("tokenizer.chat_template","")
+    if template.find("<|im_start|>") >= 0:
+        filepath = Path('character_template/chatml_web_search_template.yaml')
     if not filepath.exists():
         return ""
 
@@ -245,12 +255,19 @@ def findFirstDir(dir):
         if ext == "":
             return item
 
-def findFirstGGUF(dir):
+def findFirstGGUF(dir: str):
     items = os.listdir(dir)
     for item in items:
-        index = item.find(".gguf")
-        if index >= 0:
+        if item.endswith(".gguf"):
             return item
+        
+def findAllGGUF(dir: str):
+    items = os.listdir(dir)
+    newItems = []
+    for item in items:
+        if item.endswith(".gguf"):
+            newItems.append(item)
+    return newItems
 
 def findDir(dir):
     items = os.listdir(dir)
@@ -328,6 +345,25 @@ def convertChatDialogue(chatTemplates: list[ChatTemplate]):
     chat = []
     for chatTemplate in chatTemplates:
         chat.append(f"{chatTemplate.name}: {chatTemplate.chat}")
+    return chat
+
+def convertChatDialogueDefault(chatTemplates: list[ChatTemplate], character: Character, userName, contextDefault):
+    chat = [
+        {"role":"system", "content": f"""{contextDefault}"""}
+    ]
+    for chatTemplate in chatTemplates:
+
+        role = chatTemplate.name
+        if role == userName:
+            role = "user"
+        elif role == character.name:
+            role = "assistant"
+
+        message = {
+                "role": role,
+                "content": chatTemplate.chat
+            }
+        chat.append(message)
     return chat
 
 def convertChatDialogueTranslated(chatTemplates: list[ChatTemplate]):
@@ -472,7 +508,61 @@ async def setLanguage(request: UserConfig):
     except Exception as e:
         return ResponseData[str](
             status="error",
-            message = f"Add character failed: {str(e)}"
+            message = f"Set language failed: {str(e)}"
+        )
+
+@app.get("/get-models")
+async def getModels():    
+    try:
+        os.makedirs("llm_models", exist_ok=True)
+        modelDir = os.path.join("llm_models")
+        ggufFiles = findAllGGUF(modelDir)
+       
+        return ResponseData[list[str]](
+            status="success",
+            message = "",
+            data=ggufFiles
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Load model failed: {str(e)}"
+        )
+
+@app.get("/get-model")
+async def getModel():    
+    try:
+        config = loadConfig()
+       
+        return ResponseData[str](
+            status="success",
+            message = "",
+            data=config.model_path
+        )
+    except Exception as e:
+        return ResponseData[GenerateResponse](
+            status="error",
+            message = f"Load model failed: {str(e)}"
+        )
+
+@app.post("/set-model", response_model=ResponseData[str])
+async def setModel(request: RequestModel):
+    try:
+        config = loadConfig()
+        
+        load_llama_cpp_model(request.model_path)
+
+        config.model_path = request.model_path
+        saveConfig(config)
+
+        return ResponseData[str](
+            status="success",
+            message = ""
+        )
+    except Exception as e:
+        return ResponseData[str](
+            status="error",
+            message = f"Set model failed: {str(e)}"
         )
     
 @app.delete("/delete-character", response_model=ResponseData[GenerateResponse])
@@ -509,17 +599,26 @@ async def deleteCharacter(request: Character):
             message = f"Delete character failed: {str(e)}"
         )
 
-def load_llama_cpp_model():
+def load_llama_cpp_model(requestModelPath):
     """Load the LLM model on startup"""
     global llm_model, sequenceLength
 
     # Check if model path exists
     os.makedirs("llm_models", exist_ok=True)
     modelDir = os.path.join("llm_models")
-    modelPath = os.path.join(modelDir,findFirstGGUF(modelDir))
+    modelPath = requestModelPath
+    if requestModelPath == "":
+        userConfig = loadConfig()
+        if userConfig.model_path == "":
+            modelPath = findFirstGGUF(modelDir)
+        else:
+            modelPath = userConfig.model_path
+    modelPath = os.path.join(modelDir,modelPath)
 
     if not os.path.exists(modelPath):
-        raise HTTPException(status_code=400, detail=f"Model path does not exist: {modelPath}")
+        modelPath = findFirstGGUF(modelDir)
+        if not os.path.exists(modelPath):
+            raise HTTPException(status_code=400, detail=f"Model path does not exist: {modelPath}")
 
     # # Replace with your model path
     # model_path = "models/silicon-maid-7b.Q4_K_M.gguf"  # Update this path
@@ -541,13 +640,13 @@ def load_llama_cpp_model():
             rope_freq_scale=0,
             flash_attn=True
         )
-        logger.info("Model loaded successfully")
+        logger.info("Model loaded successfully " + llm_model.chat_format)
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
         # You might want to set llm_model to None and handle this in endpoints
 
 @app.post("/generate-song", response_model=ResponseData[ResponseSong])
-async def generate_text(request: RequestSong):    
+async def generate_song(request: RequestSong):    
     character = getCharacter(request.character_name)
     
     vocal, instrumental, outputPathFull, title = youtube_downloader.startVoiceChange(request.url, character.rvc_model)
@@ -600,6 +699,11 @@ def generateOutput(newPrompt, request:GenerateRequest):
         echo=False  # Don't include the prompt in the response
     )
 
+def generateOutputDefault(messages, request:GenerateRequest):
+    return llm_model.create_chat_completion(
+        messages=messages
+    )
+
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):    
     characterTemplate = loadCharacterTemplate()
@@ -641,6 +745,13 @@ async def generate_text(request: GenerateRequest):
                 promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
             else:
                 break
+
+        # defaultTemplate = loadCharacterTemplate()
+        # contextDefault = replaceContextPrompt(defaultTemplate, character, chatText, request.name)
+        # messageDefault = convertChatDialogueDefault(chat.messages, character, request.name,contextDefault)
+        # print("message default ",messageDefault)
+        # output = generateOutputDefault(messageDefault, request)
+        # newOutput = output['choices'][0]['message']['content']
 
         output = generateOutput(newPrompt, request)
         newOutput = output['choices'][0]['text']
@@ -788,7 +899,7 @@ if __name__ == "__main__":
     download_if_not_exists('averaged_perceptron_tagger')
     download_if_not_exists('averaged_perceptron_tagger_eng')
 
-    load_llama_cpp_model()
+    load_llama_cpp_model("")
 
     script.setup()
 
