@@ -2,6 +2,14 @@ CONTEXT: |-
   Below is an instruction that describes a task. Write a response that completes the request.
 
   ### Instruction:
+  Write {USER_NAME}'s next reply in a fictional roleplay chat between {SYSTEM_NAME} and {USER_NAME}. Use the provided Example Response Format for formatting direction.
+  Avoid repetition, don't loop. Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.
+  {SYSTEM_NAME} should respond with emotions and actions, action is optional.
+
+  ## Current date:
+  {CURRENT_DATE}
+
+  ## Character Description:
   {DESCRIPTION}
 
   ## List of Emotion Categories and Triggers:
