@@ -63,7 +63,7 @@ class GenerateRequest(BaseModel):
     prompt: str = ""
     language: str = ""
     isWebSearch: bool = False
-    max_new_tokens: Optional[int] = 200
+    max_new_tokens: Optional[int] = 500
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.9
     top_k: Optional[int] = 50
@@ -746,13 +746,6 @@ async def generate_text(request: GenerateRequest):
             else:
                 break
 
-        # defaultTemplate = loadCharacterTemplate()
-        # contextDefault = replaceContextPrompt(defaultTemplate, character, chatText, request.name)
-        # messageDefault = convertChatDialogueDefault(chat.messages, character, request.name,contextDefault)
-        # print("message default ",messageDefault)
-        # output = generateOutputDefault(messageDefault, request)
-        # newOutput = output['choices'][0]['message']['content']
-
         output = generateOutput(newPrompt, request)
         newOutput = output['choices'][0]['text']
 
@@ -797,15 +790,12 @@ async def generate_text(request: GenerateRequest):
         )
     
     tts_output = newOutput
-    print(f"original output {tts_output}")
     actionParams = parse_brackets_keep_all(tts_output)
     
     # preprocess tts and output generation text, tts doesn't include emoji or emotion, but generation text does
     tts_output = script.tts_preprocessor.replace_invalid_chars(tts_output)
-    tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
     newCleanedOutput = tts_output
     tts_output = script.tts_preprocessor.removeParentheses(tts_output)
-    tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
     translatedResponse = tts_output
 
     if request.language == "en":
@@ -813,16 +803,16 @@ async def generate_text(request: GenerateRequest):
         tts_output = script.tts_preprocessor.remove_emojis_with_library(tts_output)
         tts_output = script.tts_preprocessor.replace_abbreviations(tts_output)
         tts_output = script.tts_preprocessor.replace_numbers(tts_output)
+        tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
     
     if request.language != "en":
         outputTranslated = await translator.translate(tts_output, dest=request.language, src="en")
         translatedResponse = outputTranslated["text"]
         tts_output = script.tts_preprocessor.remove_emojis_with_library(outputTranslated["text"])
+        tts_output = script.tts_preprocessor.clean_whitespace(tts_output)
 
     newCleanedOutput = script.tts_preprocessor.remove_emojis_with_library(newCleanedOutput)        
-    
-    print(f"tts output {tts_output}")
-
+ 
     # edge tts for non english language
     if request.language != "en":
         voices = await VoicesManager.create()
