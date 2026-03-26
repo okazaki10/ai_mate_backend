@@ -148,6 +148,11 @@ def remove_surrounded_chars(string):
 
 def removeParentheses(string):
     # Remove square-surrounded text
+    string = string.rstrip("\n")
+    string = string.rstrip(" ")
+    string = string.rstrip("_")
+    string = string.lstrip("\n")
+    string = string.lstrip(" ")
     return re.sub(r'\[[^\]]*\]', '', string)
 
 def convert_num_locale(text):

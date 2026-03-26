@@ -53,4 +53,4 @@ CONTEXT: |-
   # Taking the above Chat Dialogue information into consideration, you must engage in a roleplay conversation with {USER_NAME} below this line. Do not write {USER_NAME}'s dialogue lines in your responses.
 
   ### Response:
-  {SYSTEM_NAME}:
+  {SYSTEM_NAME}: 

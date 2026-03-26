@@ -1,4 +1,4 @@
 {
     "language": "en",
-    "model_path": "dolphin-2.6-mistral-7b.Q4_K_M.gguf"
+    "model_path": "mistral-nemo-gutenberg-12B-v2.Q4_K_M.gguf"
 }

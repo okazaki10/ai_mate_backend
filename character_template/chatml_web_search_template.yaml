@@ -12,5 +12,12 @@ CONTEXT: |-
 
   [/AVAILABLE_TOOLS]
 
+  # Example Response Format:
+  # if Search Query is related to Search Results
+  {SUMMARY} [ACTION:OK()]</s>
+
+  # If Search Results is empty or if Search Query is unrelated to Search Results
+  {SUMMARY} [ACTION:SEARCH_AGAIN()]</s>
+
   # Response:
   [/INST]

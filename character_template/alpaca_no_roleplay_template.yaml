@@ -1,0 +1,14 @@
+CONTEXT: |-
+  Below is an instruction that describes a task. Write a response that completes the request.
+
+  ### Instruction:
+  {DESCRIPTION}
+
+  ## Chat Dialogue:
+
+  {USER_DIALOGUE}
+
+  # Taking the above Chat Dialogue information into consideration, you must engage in a conversation with {USER_NAME} below this line. Do not write {USER_NAME}'s dialogue lines in your responses.
+
+  ### Response:
+  {SYSTEM_NAME}:

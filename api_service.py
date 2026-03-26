@@ -69,6 +69,7 @@ class GenerateRequest(BaseModel):
     top_k: Optional[int] = 50
     token_repetition_penalty: Optional[float] = 1.1
     stop_strings: Optional[list] = None
+    is_roleplay: bool = True
 
 class RequestSong(BaseModel):
     character_name: str = ""
@@ -82,6 +83,7 @@ class Character(BaseModel):
     description: str = ""
     rvc_model: str = ""
     vrm_path: str = ""
+    is_roleplay: bool = True
 
 class ActionParams(BaseModel):
     emotions: list[str] = []
@@ -139,11 +141,21 @@ def download_if_not_exists(resource_name):
         print(f"Downloading {resource_name}...")
         nltk.download(resource_name)
 
-def loadCharacterTemplate():
+def checkFormat():
+    template = llm_model.metadata.get("tokenizer.chat_template","")
+    if template.find("<|im_start|>") >= 0:
+        return "chatml"
+    return "alpaca"
+
+def loadCharacterTemplate(isRolePlay: bool):
     filepath = Path('character_template/alpaca_template.yaml')
+    if not isRolePlay:
+        filepath = Path('character_template/alpaca_no_roleplay_template.yaml')
     template = llm_model.metadata.get("tokenizer.chat_template","")
     if template.find("<|im_start|>") >= 0:
         filepath = Path('character_template/chatml_template.yaml')
+        if not isRolePlay:
+            filepath = Path('character_template/chatml_no_roleplay_template.yaml')
     if not filepath.exists():
         return ""
 
@@ -341,10 +353,17 @@ async def deleteLastChat(request: Character):
             message = f"Delete failed: {str(e)}"
         )
 
-def convertChatDialogue(chatTemplates: list[ChatTemplate]):
+def convertChatDialogue(chatTemplates: list[ChatTemplate], username):
     chat = []
     for chatTemplate in chatTemplates:
-        chat.append(f"{chatTemplate.name}: {chatTemplate.chat}")
+        message = f"{chatTemplate.name}: {chatTemplate.chat}"
+        format = checkFormat()
+        if format == "chatml":
+            if username == chatTemplate.name:
+                message = f"{chatTemplate.name}: [INST]{chatTemplate.chat}[/INST]"
+            else:
+                message = f"{chatTemplate.name}: {chatTemplate.chat}</s>"
+        chat.append(message)
     return chat
 
 def convertChatDialogueDefault(chatTemplates: list[ChatTemplate], character: Character, userName, contextDefault):
@@ -369,7 +388,11 @@ def convertChatDialogueDefault(chatTemplates: list[ChatTemplate], character: Cha
 def convertChatDialogueTranslated(chatTemplates: list[ChatTemplate]):
     chat = []
     for chatTemplate in chatTemplates:
-        chat.append(f"{chatTemplate.name}: {chatTemplate.chatTranslated}")
+        message = f"{chatTemplate.name}: {chatTemplate.chatTranslated}"
+        message = message.replace(r"</s>","")
+        message = message.replace(r"[INST]","")
+        message = message.replace(r"[/INST]","")
+        chat.append(message)
     return chat
 
 def replaceContextPrompt(characterTemplate, character: Character, chatText, userName):
@@ -398,6 +421,7 @@ def getCharacter(characterName) -> Character:
                 char.description = character.description
                 char.rvc_model = character.rvc_model
                 char.vrm_path = character.vrm_path
+                char.is_roleplay = character.is_roleplay
         
         return char
     except Exception as e:
@@ -447,6 +471,7 @@ async def defaultCharacter():
                 character.description = defaultCharacter.description
                 character.rvc_model = defaultCharacter.rvc_model
                 character.vrm_path = defaultCharacter.vrm_path
+                character.is_roleplay = True
                 break
 
         saveCharacter(characters)
@@ -474,6 +499,7 @@ async def addCharacter(request: Character):
                 character.description = request.description
                 character.rvc_model = request.rvc_model
                 character.vrm_path = request.vrm_path
+                character.is_roleplay = request.is_roleplay
                 isUpdate = True
                 break
 
@@ -695,7 +721,7 @@ def generateOutput(newPrompt, request:GenerateRequest):
     return llm_model(
         newPrompt,
         max_tokens=request.max_new_tokens,
-        stop=["</s>",f"{request.character_name}:",f"{request.name}:",f"{request.name.capitalize()}:","#","Search Result:"],
+        stop=["</s>",f"{request.character_name}:",f"{request.name}:",f"{request.name.capitalize()}:","#","Search Result:","---","[/INST]"],
         echo=False  # Don't include the prompt in the response
     )
 
@@ -706,7 +732,7 @@ def generateOutputDefault(messages, request:GenerateRequest):
 
 @app.post("/generate", response_model=ResponseData[GenerateResponse])
 async def generate_text(request: GenerateRequest):    
-    characterTemplate = loadCharacterTemplate()
+    characterTemplate = loadCharacterTemplate(request.is_roleplay)
     character = getCharacter(request.character_name)
     chat = loadChat(request.character_name)
     
@@ -728,7 +754,7 @@ async def generate_text(request: GenerateRequest):
     newOutput = "Result is empty"
     if not request.isWebSearch:
         chat.messages.append(chatTemplate)
-        chatText = "\n".join(convertChatDialogue(chat.messages))
+        chatText = "\n".join(convertChatDialogue(chat.messages, request.name))
         newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
 
         print(newPrompt)
@@ -740,7 +766,7 @@ async def generate_text(request: GenerateRequest):
         while promptTokens + request.max_new_tokens > sequenceLength:
             if len(chat.messages) > 0:
                 chat.messages.pop(0)
-                chatText = "\n".join(convertChatDialogue(chat.messages))
+                chatText = "\n".join(convertChatDialogue(chat.messages, request.name))
                 newPrompt = replaceContextPrompt(characterTemplate, character, chatText, request.name)
                 promptTokens = len(llm_model.tokenize(newPrompt.encode('utf-8')))
             else:
