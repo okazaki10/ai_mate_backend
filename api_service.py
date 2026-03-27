@@ -51,6 +51,7 @@ logger = None
 # increaste sequenceLength to increase the memory
 sequenceLength = 4096
 llm_model = None
+languageSupport = {"en":True}
 
 class ModelLoadRequest(BaseModel):
     path: str
@@ -840,7 +841,7 @@ async def generate_text(request: GenerateRequest):
     newCleanedOutput = script.tts_preprocessor.remove_emojis_with_library(newCleanedOutput)        
  
     # edge tts for non english language
-    if request.language != "en":
+    if request.language not in languageSupport:
         voices = await VoicesManager.create()
         voice = voices.find(Gender="Female", Language=request.language)
     
@@ -868,7 +869,7 @@ async def generate_text(request: GenerateRequest):
 
     # emotivoice tts for english language
     base64_audio = ""
-    if request.language == "en":
+    if request.language in languageSupport:
         base64_audio = script.output_modifier(actionParams.emotions[0] if actionParams.emotions else "", tts_output, character.rvc_model)
     else:
         with open(OUTPUT_FILE_WAV, 'rb') as wav_file:

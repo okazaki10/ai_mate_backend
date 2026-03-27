@@ -148,12 +148,13 @@ def remove_surrounded_chars(string):
 
 def removeParentheses(string):
     # Remove square-surrounded text
+    string = re.sub(r'\[[^\]]*\]', '', string)
     string = string.rstrip("\n")
     string = string.rstrip(" ")
     string = string.rstrip("_")
     string = string.lstrip("\n")
     string = string.lstrip(" ")
-    return re.sub(r'\[[^\]]*\]', '', string)
+    return string
 
 def convert_num_locale(text):
     # This detects locale and converts it to American without comma separators
