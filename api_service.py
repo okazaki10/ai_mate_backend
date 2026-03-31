@@ -23,6 +23,10 @@ import sys
 from web_search import WebSearchLLM
 import datetime
 import numpy as np
+from qwen_tts import Qwen3TTSModel
+import torch
+import soundfile as sf
+import pycountry
 
 # Save original argv
 original_argv = sys.argv[:]
@@ -52,6 +56,8 @@ logger = None
 sequenceLength = 4096
 llm_model = None
 languageSupport = {"en":True}
+
+lang_map = {lang.alpha_2: lang.name for lang in pycountry.languages if hasattr(lang, 'alpha_2')}
 
 class ModelLoadRequest(BaseModel):
     path: str
@@ -841,21 +847,21 @@ async def generate_text(request: GenerateRequest):
     newCleanedOutput = script.tts_preprocessor.remove_emojis_with_library(newCleanedOutput)        
  
     # edge tts for non english language
-    if request.language not in languageSupport:
-        voices = await VoicesManager.create()
-        voice = voices.find(Gender="Female", Language=request.language)
+    # if request.language not in languageSupport:
+    #     voices = await VoicesManager.create()
+    #     voice = voices.find(Gender="Female", Language=request.language)
     
-        OUTPUT_FILE = "edge_tts_output.mp3"
-        OUTPUT_FILE_WAV = "edge_tts_output.wav"
-        if voice:
-            voiceName = voice[0]["Name"]
-            communicate = edge_tts.Communicate(tts_output, voiceName, rate="+10%")
-            await communicate.save(OUTPUT_FILE)
+    #     OUTPUT_FILE = "edge_tts_output.mp3"
+    #     OUTPUT_FILE_WAV = "edge_tts_output.wav"
+    #     if voice:
+    #         voiceName = voice[0]["Name"]
+    #         communicate = edge_tts.Communicate(tts_output, voiceName, rate="+10%")
+    #         await communicate.save(OUTPUT_FILE)
 
-            audio = AudioSegment.from_mp3(OUTPUT_FILE)
-            audio.export(OUTPUT_FILE_WAV, format="wav")
-            audio_data = script.rvc.load_audio(OUTPUT_FILE_WAV, 16000)
-            script.rvc_click(audio_data, OUTPUT_FILE_WAV, character.rvc_model)
+    #         audio = AudioSegment.from_mp3(OUTPUT_FILE)
+    #         audio.export(OUTPUT_FILE_WAV, format="wav")
+    #         audio_data = script.rvc.load_audio(OUTPUT_FILE_WAV, 16000)
+    #         script.rvc_click(audio_data, OUTPUT_FILE_WAV, character.rvc_model)
     
     # if request.language == "id":
     #     script.params['rvc_language'] = "indonesia"
@@ -869,12 +875,55 @@ async def generate_text(request: GenerateRequest):
 
     # emotivoice tts for english language
     base64_audio = ""
-    if request.language in languageSupport:
-        base64_audio = script.output_modifier(actionParams.emotions[0] if actionParams.emotions else "", tts_output, character.rvc_model)
-    else:
-        with open(OUTPUT_FILE_WAV, 'rb') as wav_file:
-            wav_data = wav_file.read()
-            base64_audio = base64.b64encode(wav_data).decode('utf-8')
+    # if request.language in languageSupport:
+    #     base64_audio = script.output_modifier(actionParams.emotions[0] if actionParams.emotions else "", tts_output, character.rvc_model)
+    # else:
+    tts = Qwen3TTSModel.from_pretrained(
+        "qwen_model\Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        device_map="cuda:0",
+        dtype=torch.bfloat16,
+        attn_implementation="flash_attention_2",
+    )
+
+    country = ""
+    if request.language in lang_map:
+        country = lang_map[request.language]
+
+    instruct = country + " language"
+    for i, value in enumerate(actionParams.emotions):
+        if i == 0:
+            instruct += ", " + value
+        else:
+            instruct += ", and then "+value
+
+    print("instruct ",instruct)
+
+    wavs, sr = tts.generate_custom_voice(
+        text=tts_output,
+        language="auto",
+        speaker="serena",
+        instruct=instruct,
+    )
+
+    OUTPUT_FILE_WAV = "qwen3_tts_test_custom_single.wav"
+
+    sf.write(OUTPUT_FILE_WAV, wavs[0], sr)
+
+    audio_data = script.rvc.load_audio(OUTPUT_FILE_WAV, 16000)
+
+    OUTPUT_FILE_RVC_WAV = "rvc_ai_mate.wav"
+    script.rvc_click(audio_data, OUTPUT_FILE_RVC_WAV, character.rvc_model)
+
+    with open(OUTPUT_FILE_RVC_WAV, 'rb') as wav_file:
+        wav_data = wav_file.read()
+        base64_audio = base64.b64encode(wav_data).decode('utf-8')
+
+        # install flash attention
+        # install pycountry
+
+        # with open(OUTPUT_FILE_WAV, 'rb') as wav_file:
+        #     wav_data = wav_file.read()
+        #     base64_audio = base64.b64encode(wav_data).decode('utf-8')
 
     outputToken = len(llm_model.tokenize(newOutput.encode('utf-8')))
 
